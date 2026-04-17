@@ -1,12 +1,6 @@
 # nucb_transformer
 
-A transformer-based sequence-to-activity classifier for NucB nuclease variants, built to replicate and extend the CNN described in:
-
-> **Scalable, iterative engineering of functional proteins using machine learning**
-> Awasthi & Johnson et al., *Cell Systems* 2025
-> [https://www.cell.com/cell-systems/fulltext/S2405-4712(25)00069-9](https://www.cell.com/cell-systems/fulltext/S2405-4712(25)00069-9)
-
-Reference CNN implementation: [google-deepmind/nuclease_design](https://github.com/google-deepmind/nuclease_design)
+A transformer-based sequence-to-activity classifier for NucB nuclease variants, built for comparison to the CNN in [google-deepmind/nuclease_design](https://github.com/google-deepmind/nuclease_design)
 
 ---
 
