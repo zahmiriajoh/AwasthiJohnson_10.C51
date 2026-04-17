@@ -1,0 +1,22 @@
+# Core ML
+torch>=2.2.0
+numpy>=1.26.0
+pandas>=2.2.0
+scikit-learn>=1.4.0
+pyyaml>=6.0.1
+
+# Data / bio
+biopython>=1.83
+scipy>=1.12.0
+statsmodels>=0.14.0
+
+# Training utilities
+wandb>=0.16.0          # optional — set log_wandb: false in config to skip
+
+# Notebooks
+jupyter>=1.0.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# Testing
+pytest>=8.0.0

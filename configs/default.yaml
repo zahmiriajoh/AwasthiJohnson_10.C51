@@ -1,0 +1,31 @@
+# Default hyperparameters for NucleaseTransformer.
+# Values chosen to produce a model of similar capacity to the DeepMind CNN
+# (3 conv layers, 32 filters, dense-64) while matching its 5% dropout rate.
+
+model:
+  d_model: 128          # embedding / attention dimension
+  num_heads: 4          # attention heads (d_model must be divisible by num_heads)
+  num_layers: 3         # encoder blocks — mirrors the CNN's 3 conv layers
+  ffn_dim: 256          # feedforward inner dimension (2× d_model)
+  dropout: 0.05         # 5% dropout, same as CNN default
+  pos_encoding: sinusoidal   # "sinusoidal" | "learned"
+
+data:
+  landscape_csv: data/landscape.csv
+  wildtype_fasta: data/wildtype.fasta
+  val_frac: 0.1
+  test_frac: 0.1
+  cluster_aware_split: true
+  batch_size: 256
+  num_workers: 4
+
+training:
+  epochs: 50
+  learning_rate: 1.0e-3
+  weight_decay: 1.0e-4
+  warmup_steps: 500     # linear LR warmup before cosine decay
+  grad_clip: 1.0
+  seed: 42
+  checkpoint_dir: checkpoints/
+  log_wandb: false      # set true to enable Weights & Biases logging
+  wandb_project: nuclease_transformer
