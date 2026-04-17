@@ -60,7 +60,7 @@ See [configs/default.yaml](configs/default.yaml) for the full list. Defaults are
 To run a hyperparameter sweep: `wandb sweep configs/sweep.yaml`.
 
 ## Repo structure
-
+```bash
 nucb_transformer/
 │
 ├── README.md
@@ -118,3 +118,4 @@ nucb_transformer/
     ├── test_dataset.py
     ├── test_model.py        # forward pass shape checks, no NaN outputs
     └── test_metrics.py
+    ```
