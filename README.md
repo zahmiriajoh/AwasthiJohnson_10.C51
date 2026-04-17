@@ -2,7 +2,7 @@
 
 A transformer-based sequence-to-activity classifier for NucB nuclease variants, built for comparison to the CNN described in:
 
-Reference CNN implementation: [google-deepmind/nuclease_design](https://github.com/google-deepmind/nuclease_design)
+[google-deepmind/nuclease_design](https://github.com/google-deepmind/nuclease_design)
 
 ---
 
