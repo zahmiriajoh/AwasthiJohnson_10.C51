@@ -12,20 +12,13 @@ ACTIVITY_CLASSES = ['activity > 0', 'non-functional', 'activity > WT',
 NUM_CLASSES = len(ACTIVITY_CLASSES)
 amino_acids = "ACDEFGHIKLMNPQRSTVWY"
 
-# ── lookup tables ─────────────────────────────────────────────────────────────
-
-AA_TO_IDX = {aa: i for i, aa in enumerate(amino_acids)}
-IDX_TO_AA = {i: aa for i, aa in enumerate(amino_acids)}
-
-# ── functions ─────────────────────────────────────────────────────────────────
-
-def tokenize(sequence: str) -> list[int]:
-    """Map an AA string to a list of integer token IDs."""
-    return [AA_TO_IDX[aa] for aa in sequence]
-
-
+# ── OHE ─────────────────────────────────────────────────────────────────
 _lb = LabelBinarizer().fit(list(amino_acids))
 
-def to_one_hot(sequence: str) -> np.ndarray:
-    """Convert an AA string to a (length, 20) one-hot array."""
-    return _lb.transform(list(sequence)).astype(np.float32)
+def seq_to_one_hot(sequence: str) -> np.ndarray:
+    """Convert an AA string to a (length*20,) one-hot array."""
+
+    struct_ohe = _lb.transform(list(sequence)).astype(np.float32)
+    ohe = struct_ohe.ravel()
+
+    return ohe
