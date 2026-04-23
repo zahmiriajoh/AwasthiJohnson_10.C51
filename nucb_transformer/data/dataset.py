@@ -28,8 +28,12 @@ def load_landscape(path: str = None) -> pd.DataFrame:
 - sequence
 
     """
+    df = _nd_utils.load_landscape()
 
-    return _nd_utils.load_landscape()
+    df['activity_level'] = (
+    df['activity_level'].str.replace('_greater_than_', ' > ')
+) #later, these labels will be converted to integers, but this makes them more readable for now.
+    return df
 
 # There is no other preprocessing currently written.
 # May need to consider any preprocessing done in for the CNN demonstration
@@ -44,13 +48,24 @@ class NucleaseDataset(Dataset):
     """
 
     def __init__(self, df: pd.DataFrame):
-        ...
+        self.df = df.reset_index(drop=True)
+        classes = sorted(df["activity_level"].unique())
+        self.class_to_idx = {c: i for i, c in enumerate(classes)}
 
     def __len__(self):
         return len(self.df)
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]: ...
+    def __getitem__(self, idx: int):
+        row = self.df.iloc[idx]
 
+        # X: tokenize the full sequence directly
+        tokens = tokenize(row["sequence"])
+        token_tensor = torch.tensor(tokens, dtype=torch.long)
+
+        # y: map activity_level string to integer index
+        label_index = self.class_to_idx[row["activity_level"]]
+
+        return token_tensor, label_index
 # ── dataloader factory ────────────────────────────────────────────────────────
 
 ## Not sure there's a need for collate_fn. All sequences are 142 cause we're not selecting region. Trying to see long distance effects.
@@ -72,6 +87,6 @@ def make_dataloaders(
     val_dataset = NucleaseDataset(val_df)
     test_dataset = NucleaseDataset(test_df)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, collate_fn=collate_fn)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=collate_fn)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=collate_fn)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
