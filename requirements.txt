@@ -9,6 +9,8 @@ pyyaml>=6.0.1
 biopython>=1.83
 scipy>=1.12.0
 statsmodels>=0.14.0
+nuclease_design @ git+https://github.com/google-deepmind/nuclease_design.git
+
 
 # Training utilities
 wandb>=0.16.0          # optional — set log_wandb: false in config to skip

@@ -16,6 +16,8 @@ dependencies = [
     "biopython>=1.83",
     "scipy>=1.12.0",
     "statsmodels>=0.14.0",
+    nuclease_design @ git+https://github.com/google-deepmind/nuclease_design.git,
+
 ]
 
 [project.optional-dependencies]
