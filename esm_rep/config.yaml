@@ -1,0 +1,56 @@
+# config.yaml
+# Configuration for ESM-2 + logistic regression on the NucB landscape.
+#
+# Typical workflow:
+#   python embed.py --config config.yaml   # (optional) pre-compute embeddings
+#   python train.py --config config.yaml   # train + evaluate the classifier
+#
+# train.py will compute embeddings on demand if they aren't cached, so running
+# embed.py first is only useful when you want to do the slow embedding pass on
+# one machine and the fast classifier sweep on another.
+
+data:
+  # Path to landscape.csv from https://github.com/google-deepmind/nuclease_design
+  path: landscape.csv
+  sequence_col: sequence
+  target_col: activity_level
+  generation_col: generations
+
+split:
+  # Which experimental generation(s) to TRAIN on. Values are case-insensitive
+  # and matched by set-membership against the (potentially multi-valued)
+  # `generations` column. Examples:
+  #   train_generations: [g1]            # the initial epPCR library
+  #   train_generations: [g1, g2]        # G1 + G2 combined
+  train_generations: [g1, g2]
+
+  # Which generation(s) to TEST on. Three options:
+  #   - explicit list, e.g. [g2, g3, g4]
+  #   - 'all_others'      = every generation token not listed in train_generations
+  #   - 'random_holdout'  = stratified random holdout from the train pool
+  # Variants that appear in BOTH pools are kept in train only — the same
+  # physical variant will never end up in both splits.
+  test_generations: all_others
+
+  # Only used if test_generations == 'random_holdout':
+  test_size: 0.2
+
+embedding:
+  # ESM-2 variant. t6_8M is CPU-friendly; t12_35M is a step up in quality.
+  model_name: facebook/esm2_t6_8M_UR50D
+  cache_dir: ./esm_cache
+  batch_size: 8
+  chunk_size: 1024
+  max_length: 1024
+
+classifier:
+  # Inverse regularization strengths to search over via CV.
+  Cs: [0.01, 0.1, 1.0, 10.0]
+  cv_folds: 5
+  max_iter: 5000
+  scoring: f1_macro
+  # Reweight classes inversely to their frequency. Strongly recommended given
+  # the heavy imbalance in NucB activity classes.
+  class_weight: balanced
+
+seed: 42
