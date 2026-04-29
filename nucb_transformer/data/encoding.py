@@ -11,6 +11,13 @@ ACTIVITY_CLASSES = ['activity > 0', 'non-functional', 'activity > WT',
        'activity > A73R']
 NUM_CLASSES = len(ACTIVITY_CLASSES)
 amino_acids = "ACDEFGHIKLMNPQRSTVWY"
+AA_TO_IDX = {aa: i for i, aa in enumerate(amino_acids)}
+
+# ── tokenization ──────────────────────────────────────────────────────────────
+
+def tokenize(sequence: str) -> list[int]:
+    """Map an AA string to a list of integer token IDs (0–19)."""
+    return [AA_TO_IDX[aa] for aa in sequence]
 
 # ── OHE ─────────────────────────────────────────────────────────────────
 _lb = LabelBinarizer().fit(list(amino_acids))
