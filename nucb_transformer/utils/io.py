@@ -18,7 +18,9 @@ def save_checkpoint(
     path: str,
 ):
     """Save a full training checkpoint to path (creates parent dirs if needed)."""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     torch.save(
         {
             "epoch": epoch,
