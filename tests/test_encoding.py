@@ -1,44 +1,53 @@
-# Tests for vocabulary constants and amino acid encoding utilities.
-# Validates coverage, one-hot shape/values, padding logic, and mutation application.
+# Tests for amino acid encoding utilities.
 
 import numpy as np
 import pytest
 from nucb_transformer.data.encoding import (
-    tokenize, to_one_hot, pad_or_truncate, mutation_string_to_sequence,
-    AA_TO_IDX, VOCAB_SIZE, VARIABLE_REGION_LENGTH,
+    tokenize, seq_to_one_hot, AA_TO_IDX, ACTIVITY_CLASSES, amino_acids,
 )
 
-WILDTYPE = "A" * VARIABLE_REGION_LENGTH
+SEQ = "ACDEFGHIKLMNPQRSTVWY"   # all 20 canonical AAs
 
 
 def test_all_canonical_aas_in_vocab():
-    for aa in "ACDEFGHIKLMNPQRSTVWY":
-        assert aa in AA_TO_IDX, f"{aa} missing from vocabulary"
+    for aa in amino_acids:
+        assert aa in AA_TO_IDX
 
 
-def test_tokenize_returns_valid_indices():
-    tokens = tokenize("ACDEFGHIKLMNPQRSTVWY")
-    assert all(0 <= t < VOCAB_SIZE for t in tokens)
+def test_tokenize_length_matches_sequence():
+    assert len(tokenize(SEQ)) == len(SEQ)
 
 
-def test_one_hot_shape():
-    tokens = pad_or_truncate(tokenize(WILDTYPE))
-    oh = to_one_hot(tokens)
-    assert oh.shape == (VARIABLE_REGION_LENGTH, VOCAB_SIZE)
+def test_tokenize_indices_in_range():
+    tokens = tokenize(SEQ)
+    assert all(0 <= t < len(amino_acids) for t in tokens)
 
 
-def test_one_hot_is_binary():
-    oh = to_one_hot(pad_or_truncate(tokenize("AAAA")))
-    assert set(oh.flatten().tolist()).issubset({0, 1})
+def test_tokenize_unknown_aa_raises():
+    with pytest.raises(KeyError):
+        tokenize("X")
 
 
-def test_padding_fills_to_length():
-    padded = pad_or_truncate(tokenize("AC"), length=VARIABLE_REGION_LENGTH)
-    assert len(padded) == VARIABLE_REGION_LENGTH
-    assert padded[2:] == [0] * (VARIABLE_REGION_LENGTH - 2)
+def test_seq_to_one_hot_shape():
+    ohe = seq_to_one_hot(SEQ)
+    assert ohe.shape == (len(SEQ) * len(amino_acids),)
 
 
-def test_mutation_string_applies_correctly():
-    seq = mutation_string_to_sequence("A1C", WILDTYPE)
-    assert seq[0] == "C"
-    assert seq[1:] == WILDTYPE[1:]
+def test_seq_to_one_hot_is_binary():
+    ohe = seq_to_one_hot("ACDE")
+    assert set(ohe.tolist()).issubset({0.0, 1.0})
+
+
+def test_seq_to_one_hot_one_hot_per_position():
+    ohe = seq_to_one_hot("AC")
+    # each position sums to 1
+    assert ohe[:20].sum() == pytest.approx(1.0)
+    assert ohe[20:].sum() == pytest.approx(1.0)
+
+
+def test_activity_classes_has_four_entries():
+    assert len(ACTIVITY_CLASSES) == 4
+
+
+def test_activity_classes_are_sorted():
+    assert ACTIVITY_CLASSES == sorted(ACTIVITY_CLASSES)
