@@ -15,7 +15,7 @@ import argparse
 import torch
 from nucb_transformer.utils.io import load_checkpoint, best_checkpoint_path
 from nucb_transformer.data.dataset import load_landscape, make_dataloaders
-from nucb_transformer.data.splits import split_dataset
+from nucb_transformer.data.splits import mutation_count_split
 from nucb_transformer.training.metrics import (
     compute_metrics, confusion_matrix_df, bootstrap_hit_rate, ACTIVITY_CLASSES,
 )
@@ -44,11 +44,10 @@ if __name__ == "__main__":
     model.eval()
 
     df = load_landscape()
-    _, _, test_df = split_dataset(
+    _, _, test_df = mutation_count_split(
         df,
+        max_train_mutations=dcfg.get("max_train_mutations", 2),
         val_frac=dcfg["val_frac"],
-        test_frac=dcfg["test_frac"],
-        cluster_aware=dcfg["cluster_aware_split"],
         seed=tcfg["seed"],
     )
     _, _, test_loader = make_dataloaders(

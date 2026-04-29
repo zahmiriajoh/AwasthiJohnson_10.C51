@@ -19,6 +19,32 @@ def filter_by_sublibrary(df: pd.DataFrame, sublibrary: str | None = SUBLIBRARY) 
     return df[mask].reset_index(drop=True)
 
 
+# ── mutation-count split ──────────────────────────────────────────────────────
+
+def mutation_count_split(
+    df: pd.DataFrame,
+    max_train_mutations: int = 2,
+    val_frac: float = 0.1,
+    seed: int = 42,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Split by num_mutations: variants with <= max_train_mutations go to train/val,
+    variants with > max_train_mutations go to test.
+    Validation is a random subset of the train pool.
+    """
+    train_pool = df[df["num_mutations"] <= max_train_mutations].reset_index(drop=True)
+    test_df    = df[df["num_mutations"] >  max_train_mutations].reset_index(drop=True)
+
+    rng = np.random.default_rng(seed)
+    idx = rng.permutation(len(train_pool))
+    n_val = int(len(train_pool) * val_frac)
+
+    val_df   = train_pool.iloc[idx[:n_val]].reset_index(drop=True)
+    train_df = train_pool.iloc[idx[n_val:]].reset_index(drop=True)
+
+    return train_df, val_df, test_df
+
+
 # ── splitting ─────────────────────────────────────────────────────────────────
 
 def split_dataset(

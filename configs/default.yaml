@@ -11,11 +11,8 @@ model:
   pos_encoding: sinusoidal   # "sinusoidal" | "learned"
 
 data:
-  landscape_csv: data/landscape.csv
-  wildtype_fasta: data/wildtype.fasta
+  max_train_mutations: 2   # variants with <= this many mutations → train/val; rest → test
   val_frac: 0.1
-  test_frac: 0.1
-  cluster_aware_split: true
   batch_size: 256
   num_workers: 4
 

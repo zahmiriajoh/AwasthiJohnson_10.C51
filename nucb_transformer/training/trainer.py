@@ -12,7 +12,7 @@ from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
 from nucb_transformer.models.transformer import NucleaseTransformer
 from nucb_transformer.data.dataset import load_landscape, make_dataloaders
-from nucb_transformer.data.splits import split_dataset
+from nucb_transformer.data.splits import mutation_count_split
 from nucb_transformer.training.metrics import compute_metrics, ACTIVITY_CLASSES
 from nucb_transformer.training.losses import WeightedActivityLoss
 
@@ -118,11 +118,10 @@ def train(config_path: str = "configs/default.yaml"):
 
     # ── data ──────────────────────────────────────────────────────────────────
     df = load_landscape()
-    train_df, val_df, _ = split_dataset(
+    train_df, val_df, _ = mutation_count_split(
         df,
+        max_train_mutations=dcfg.get("max_train_mutations", 2),
         val_frac=dcfg["val_frac"],
-        test_frac=dcfg["test_frac"],
-        cluster_aware=dcfg["cluster_aware_split"],
         seed=tcfg["seed"],
     )
     train_loader, val_loader, _ = make_dataloaders(
