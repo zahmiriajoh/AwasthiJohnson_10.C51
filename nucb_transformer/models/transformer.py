@@ -2,6 +2,8 @@
 # Replaces the CNN's local conv kernels with global self-attention so the model
 # can capture epistatic interactions between non-adjacent residue positions.
 
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
 from nucb_transformer.models.positional import SinusoidalPositionalEncoding, LearnedPositionalEncoding

@@ -2,6 +2,8 @@
 # Provides a standard Python logger for stdout and optional W&B integration;
 # both are opt-in via the config so the package has no hard dependency on wandb.
 
+from __future__ import annotations
+
 import logging
 from typing import Any
 

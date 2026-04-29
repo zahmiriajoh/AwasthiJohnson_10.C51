@@ -3,6 +3,8 @@
 # (matching the DeepMind CNN evaluation methodology) to prevent similar
 # sequences from leaking across splits and inflating held-out accuracy.
 
+from __future__ import annotations
+
 import pandas as pd
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
