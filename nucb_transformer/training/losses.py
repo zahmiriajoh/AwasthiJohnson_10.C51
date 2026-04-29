@@ -1,20 +1,23 @@
 # Loss functions for classification and regression objectives.
 # WeightedActivityLoss is the primary loss: it up-weights the rare high-activity
-# classes ('>WT', '>=A73R') so the model doesn't collapse to predicting '<WT'.
+# classes ('activity > WT', 'activity > A73R') so the model doesn't collapse to
+# predicting 'non-functional'.
 
 import torch
 import torch.nn as nn
-from nucb_transformer.data.encoding import ACTIVITY_CLASSES
+
+_NUM_CLASSES = 4  # non-functional | activity > 0 | activity > WT | activity > A73R
 
 
 class ActivityCrossEntropy(nn.Module):
     """Standard cross-entropy over the 4 activity classes (no re-weighting)."""
 
     def __init__(self):
-        ...
+        super().__init__()
+        self.loss_fn = nn.CrossEntropyLoss()
 
     def forward(self, logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-        ...
+        return self.loss_fn(logits, labels)
 
 
 class WeightedActivityLoss(nn.Module):
@@ -25,20 +28,10 @@ class WeightedActivityLoss(nn.Module):
 
     def __init__(self, class_counts: list[int], device: str = "cpu"):
         # weights = total / (num_classes * count_per_class)
-        ...
+        super().__init__()
+        counts = torch.tensor(class_counts, dtype=torch.float32)
+        weights = counts.sum() / (_NUM_CLASSES * counts)
+        self.loss_fn = nn.CrossEntropyLoss(weight=weights.to(device))
 
     def forward(self, logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-        ...
-
-
-class EnrichmentMSELoss(nn.Module):
-    """
-    MSE loss for the regression head operating on continuous enrichment scores.
-    Huber loss (delta configurable) reduces sensitivity to outlier variants.
-    """
-
-    def __init__(self, delta: float = 1.0):
-        ...
-
-    def forward(self, preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        ...
+        return self.loss_fn(logits, labels)
