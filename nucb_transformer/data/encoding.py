@@ -7,8 +7,7 @@ from sklearn.preprocessing import LabelBinarizer
 
 # ── constants ────────────────────────────────────────────────────────────────
 
-ACTIVITY_CLASSES = ['activity > 0', 'non-functional', 'activity > WT',
-       'activity > A73R']
+ACTIVITY_CLASSES = ['activity > 0', 'activity > A73R', 'activity > WT', 'non-functional']
 NUM_CLASSES = len(ACTIVITY_CLASSES)
 amino_acids = "ACDEFGHIKLMNPQRSTVWY"
 AA_TO_IDX = {aa: i for i, aa in enumerate(amino_acids)}

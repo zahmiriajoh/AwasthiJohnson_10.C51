@@ -7,7 +7,7 @@ import torch
 from scipy.stats import spearmanr
 from sklearn.metrics import f1_score, confusion_matrix
 
-ACTIVITY_CLASSES = ['non-functional', 'activity > 0', 'activity > WT', 'activity > A73R']
+ACTIVITY_CLASSES = ['activity > 0', 'activity > A73R', 'activity > WT', 'non-functional']
 
 
 def compute_metrics(logits: torch.Tensor, labels: torch.Tensor) -> dict:
