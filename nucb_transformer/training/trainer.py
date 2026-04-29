@@ -168,6 +168,10 @@ def train(config_path: str = "configs/default.yaml"):
 
         if val_m["accuracy"] > best_val_acc:
             best_val_acc = val_m["accuracy"]
+            ckpt_path = os.path.join(
+                tcfg["checkpoint_dir"],
+                f"epoch_{epoch:03d}_acc{best_val_acc:.4f}.pt",
+            )
             torch.save(
                 {
                     "epoch": epoch,
@@ -176,8 +180,8 @@ def train(config_path: str = "configs/default.yaml"):
                     "val_metrics": val_m,
                     "config": cfg,
                 },
-                os.path.join(tcfg["checkpoint_dir"], "best.pt"),
+                ckpt_path,
             )
-            logger.info(f"  → new best val accuracy {best_val_acc:.4f}, checkpoint saved")
+            logger.info(f"  → new best val accuracy {best_val_acc:.4f}, saved to {ckpt_path}")
 
     return model
