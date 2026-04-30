@@ -3,21 +3,30 @@ CLI entrypoint for test-set evaluation.
 Loads a checkpoint, runs inference on the held-out test split,
 and prints accuracy, macro-F1, hit-rate, and a confusion matrix.
 
+Inference accumulates only argmax class indices per batch (O(N) ints),
+not full logit tensors, so it stays memory-efficient on large test sets.
+
 Usage:
     # auto-find best checkpoint in default dir
     python scripts/evaluate.py
 
     # specify checkpoint explicitly
     python scripts/evaluate.py --checkpoint checkpoints/epoch_012_acc0.8234.pt
+
+    # save per-sequence predictions to CSV
+    python scripts/evaluate.py --save_predictions results/test_predictions.csv
 """
 
 import argparse
+import numpy as np
 import torch
+from sklearn.metrics import f1_score
+
 from nucb_transformer.utils.io import load_checkpoint, best_checkpoint_path
 from nucb_transformer.data.dataset import load_landscape, make_dataloaders
 from nucb_transformer.data.splits import mutation_count_split
 from nucb_transformer.training.metrics import (
-    compute_metrics, confusion_matrix_df, bootstrap_hit_rate, ACTIVITY_CLASSES,
+    confusion_matrix_df, bootstrap_hit_rate, hit_rate, spearman_rho, ACTIVITY_CLASSES,
 )
 from nucb_transformer.training.trainer import load_config
 
@@ -29,6 +38,8 @@ def parse_args():
     p.add_argument("--checkpoint_dir", default="checkpoints/")
     p.add_argument("--config", default="configs/default.yaml")
     p.add_argument("--device", default="cpu")
+    p.add_argument("--save_predictions", default=None, metavar="CSV",
+                   help="Save per-sequence predictions to this CSV path")
     return p.parse_args()
 
 
@@ -56,29 +67,48 @@ if __name__ == "__main__":
         num_workers=dcfg["num_workers"],
     )
 
-    all_logits, all_labels = [], []
+    # Store only the argmax per batch — O(N) ints instead of O(N*4) floats.
+    all_preds, all_labels = [], []
     with torch.no_grad():
         for tokens, labels in test_loader:
-            all_logits.append(model(tokens.to(device)).cpu())
+            logits = model(tokens.to(device))
+            all_preds.append(logits.argmax(dim=-1).cpu())
             all_labels.append(labels)
 
-    all_logits = torch.cat(all_logits)
-    all_labels = torch.cat(all_labels)
-    preds = all_logits.argmax(dim=-1).numpy()
-    labels_np = all_labels.numpy()
+    preds_np = torch.cat(all_preds).numpy()
+    labels_np = torch.cat(all_labels).numpy()
 
-    metrics = compute_metrics(all_logits, all_labels)
-    ci_lo, ci_hi = bootstrap_hit_rate(preds, labels_np)
+    # All metrics derived from class indices (no logits needed).
+    accuracy  = float((preds_np == labels_np).mean())
+    macro_f1  = float(f1_score(labels_np, preds_np, average="macro", zero_division=0))
+    per_cls_f1 = f1_score(labels_np, preds_np, average=None, zero_division=0)
+    hr        = hit_rate(preds_np, labels_np)
+    rho       = spearman_rho(preds_np.astype(float), labels_np.astype(float))
+    ci_lo, ci_hi = bootstrap_hit_rate(preds_np, labels_np)
 
     print(f"\nCheckpoint : {ckpt_path}")
     print(f"Test size  : {len(test_df):,}")
-    print(f"  accuracy     {metrics['accuracy']:.4f}")
-    print(f"  macro_f1     {metrics['macro_f1']:.4f}")
-    print(f"  hit_rate     {metrics['hit_rate']:.4f}  (95% CI: {ci_lo:.4f}–{ci_hi:.4f})")
-    print(f"  spearman_rho {metrics['spearman_rho']:.4f}")
+    print(f"  accuracy     {accuracy:.4f}")
+    print(f"  macro_f1     {macro_f1:.4f}")
+    print(f"  hit_rate     {hr:.4f}  (95% CI: {ci_lo:.4f}–{ci_hi:.4f})")
+    print(f"  spearman_rho {rho:.4f}")
     print()
-    for cls in ACTIVITY_CLASSES:
-        print(f"  f1_{cls:<20} {metrics[f'f1_{cls}']:.4f}")
+    for i, cls in enumerate(ACTIVITY_CLASSES):
+        print(f"  f1_{cls:<20} {per_cls_f1[i]:.4f}")
     print()
     print("Confusion matrix (rows=true, cols=predicted):")
-    print(confusion_matrix_df(preds, labels_np).to_string())
+    print(confusion_matrix_df(preds_np, labels_np).to_string())
+
+    # Attach predictions back to test_df for downstream analysis.
+    test_df = test_df.reset_index(drop=True)
+    test_df["predicted_class"] = [ACTIVITY_CLASSES[i] for i in preds_np]
+    test_df["correct"] = test_df["predicted_class"] == test_df["activity_level"]
+
+    print(f"\nSample predictions (first 10 rows):")
+    print(test_df[["sequence", "activity_level", "predicted_class", "correct"]].head(10).to_string())
+
+    if args.save_predictions:
+        import os
+        os.makedirs(os.path.dirname(args.save_predictions) or ".", exist_ok=True)
+        test_df.to_csv(args.save_predictions, index=False)
+        print(f"\nFull predictions saved → {args.save_predictions}")
