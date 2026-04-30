@@ -7,6 +7,7 @@ import math
 import logging
 import torch
 import yaml
+from tqdm import tqdm
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
@@ -55,7 +56,8 @@ def train_one_epoch(
     total_loss = 0.0
     all_logits, all_labels = [], []
 
-    for tokens, labels in loader:
+    batch_bar = tqdm(loader, leave=False, desc="  batches")
+    for tokens, labels in batch_bar:
         tokens, labels = tokens.to(device), labels.to(device)
         optimizer.zero_grad()
         logits = model(tokens)
@@ -68,6 +70,7 @@ def train_one_epoch(
         total_loss += loss.item() * len(labels)
         all_logits.append(logits.detach())
         all_labels.append(labels)
+        batch_bar.set_postfix({"batch_loss": f"{loss.item():.4f}"})
 
     all_logits = torch.cat(all_logits)
     all_labels = torch.cat(all_labels)
@@ -150,20 +153,21 @@ def train(config_path: str = "configs/default.yaml"):
     # ── epoch loop ────────────────────────────────────────────────────────────
     os.makedirs(tcfg["checkpoint_dir"], exist_ok=True)
     best_val_acc = 0.0
+    epoch_bar = tqdm(range(1, tcfg["epochs"] + 1), desc="epochs")
 
-    for epoch in range(1, tcfg["epochs"] + 1):
+    for epoch in epoch_bar:
         train_m = train_one_epoch(
             model, train_loader, optimizer, scheduler,
             criterion, device, tcfg["grad_clip"],
         )
         val_m = validate(model, val_loader, criterion, device)
 
-        logger.info(
-            f"epoch {epoch}/{tcfg['epochs']} | "
-            f"train loss {train_m['loss']:.4f} acc {train_m['accuracy']:.4f} | "
-            f"val loss {val_m['loss']:.4f} acc {val_m['accuracy']:.4f} "
-            f"hit_rate {val_m['hit_rate']:.4f}"
-        )
+        epoch_bar.set_postfix({
+            "train_loss": f"{train_m['loss']:.4f}",
+            "val_loss":   f"{val_m['loss']:.4f}",
+            "val_acc":    f"{val_m['accuracy']:.4f}",
+            "hit_rate":   f"{val_m['hit_rate']:.4f}",
+        })
 
         if val_m["accuracy"] > best_val_acc:
             best_val_acc = val_m["accuracy"]

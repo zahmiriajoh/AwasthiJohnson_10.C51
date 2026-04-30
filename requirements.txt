@@ -13,6 +13,7 @@ nuclease_design @ git+https://github.com/google-deepmind/nuclease_design.git
 
 
 # Training utilities
+tqdm>=4.66.0
 wandb>=0.16.0          # optional — set log_wandb: false in config to skip
 
 # Notebooks

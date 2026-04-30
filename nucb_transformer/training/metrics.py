@@ -19,7 +19,6 @@ def compute_metrics(logits: torch.Tensor, labels: torch.Tensor) -> dict:
     """
     preds = logits.argmax(dim=-1).cpu().numpy()
     labels_np = labels.cpu().numpy()
-
     accuracy = float((preds == labels_np).mean())
     macro_f1 = float(f1_score(labels_np, preds, average="macro", zero_division=0))
     per_class_f1 = f1_score(labels_np, preds, average=None, zero_division=0)
