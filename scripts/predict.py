@@ -75,7 +75,7 @@ def parse_args():
     p.add_argument("--output_csv", required=True)
     p.add_argument("--wildtype", default=None,
                    help="Full wildtype AA sequence; required when input CSV has 'mutations' column")
-    p.add_argument("--device", default="cpu")
+    p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     return p.parse_args()
 
 
