@@ -212,4 +212,5 @@ __marimo__/
 *.pth
 wandb/
 results/
+checkpoints/sweep/
 
