@@ -1,34 +1,24 @@
-# Hyperparameter sweep config for Weights & Biases.
-# Run with: wandb sweep configs/sweep.yaml
-# then: wandb agent <sweep_id>
-
-program: scripts/train.py
-method: bayes           # Bayesian optimization over the search space below
+method: bayes
 metric:
   name: val/hit_rate
   goal: maximize
 
 parameters:
-  model.d_model:
-    values: [64, 128, 256]
-  model.num_heads:
-    values: [2, 4, 8]
-  model.num_layers:
-    values: [2, 3, 4, 6]
-  model.ffn_dim:
-    values: [128, 256, 512]
-  model.dropout:
-    min: 0.0
-    max: 0.3
-  model.pos_encoding:
-    values: [sinusoidal, learned]
-  training.learning_rate:
+  learning_rate:
     distribution: log_uniform_values
     min: 1.0e-4
-    max: 1.0e-2
-  training.weight_decay:
+    max: 1.0e-3
+  weight_decay:
     distribution: log_uniform_values
     min: 1.0e-5
-    max: 1.0e-2
-  data.batch_size:
-    values: [128, 256, 512]
+    max: 1.0e-1
+  d_model:
+    values: [64, 128, 256]
+  num_heads:
+    values: [2, 4, 8]      # all divide evenly into 64, 128, and 256
+  num_layers:
+    values: [2, 3, 4, 6]
+  dropout:
+    distribution: uniform
+    min: 0.0
+    max: 0.2
