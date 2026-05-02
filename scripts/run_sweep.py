@@ -179,72 +179,76 @@ def objective(trial: optuna.Trial) -> float:
         lr_lambda=_warmup_cosine_lr(tcfg["warmup_steps"], total_steps),
     )
 
-    # Restore from checkpoint if this trial was interrupted.
+    # Restore from checkpoint only if it matches this trial's architecture.
     start_epoch = 1
     ckpt = _load_checkpoint(device)
-    if ckpt:
+    if ckpt and ckpt.get("cfg", {}).get("model") == cfg["model"]:
         model.load_state_dict(ckpt["model_state_dict"])
         optimizer.load_state_dict(ckpt["optimizer_state_dict"])
         scheduler.load_state_dict(ckpt["scheduler_state_dict"])
         start_epoch = ckpt["epoch"] + 1
         print(f"  Resumed from epoch {ckpt['epoch']}", flush=True)
+    elif ckpt:
+        print("  Stale checkpoint has different architecture — starting from scratch.", flush=True)
 
     best_hit_rate = 0.0
     best_val = {}
 
-    for epoch in range(start_epoch, tcfg["epochs"] + 1):
-        t0 = time.time()
-        train_m = _run_epoch(
-            model, train_loader, optimizer, scheduler,
-            criterion, device, tcfg["grad_clip"], train=True,
-        )
-        val_m = _run_epoch(
-            model, val_loader, None, None,
-            criterion, device, tcfg["grad_clip"], train=False,
-        )
-        elapsed = time.time() - t0
+    try:
+        for epoch in range(start_epoch, tcfg["epochs"] + 1):
+            t0 = time.time()
+            train_m = _run_epoch(
+                model, train_loader, optimizer, scheduler,
+                criterion, device, tcfg["grad_clip"], train=True,
+            )
+            val_m = _run_epoch(
+                model, val_loader, None, None,
+                criterion, device, tcfg["grad_clip"], train=False,
+            )
+            elapsed = time.time() - t0
 
-        print(
-            f"  epoch {epoch:3d}/{tcfg['epochs']} "
-            f"| train loss={train_m['loss']:.4f}  acc={train_m['accuracy']:.4f} "
-            f"| val loss={val_m['loss']:.4f}  hit_rate={val_m['hit_rate']:.4f} "
-            f"f1={val_m['macro_f1']:.4f}  rho={val_m['spearman_rho']:.4f} "
-            f"| {elapsed:.1f}s",
-            flush=True,
-        )
+            print(
+                f"  epoch {epoch:3d}/{tcfg['epochs']} "
+                f"| train loss={train_m['loss']:.4f}  acc={train_m['accuracy']:.4f} "
+                f"| val loss={val_m['loss']:.4f}  hit_rate={val_m['hit_rate']:.4f} "
+                f"f1={val_m['macro_f1']:.4f}  rho={val_m['spearman_rho']:.4f} "
+                f"| {elapsed:.1f}s",
+                flush=True,
+            )
 
-        if val_m["hit_rate"] > best_hit_rate:
-            best_hit_rate = val_m["hit_rate"]
-            best_val = val_m
+            if val_m["hit_rate"] > best_hit_rate:
+                best_hit_rate = val_m["hit_rate"]
+                best_val = val_m
 
-        _save_checkpoint(epoch, model, optimizer, scheduler, cfg)
+            _save_checkpoint(epoch, model, optimizer, scheduler, cfg)
 
-        # Prune unpromising trials early.
-        trial.report(val_m["hit_rate"], epoch)
-        if trial.should_prune():
-            print(f"  Pruned at epoch {epoch}", flush=True)
-            raise optuna.TrialPruned()
+            # Prune unpromising trials early.
+            trial.report(val_m["hit_rate"], epoch)
+            if trial.should_prune():
+                print(f"  Pruned at epoch {epoch}", flush=True)
+                raise optuna.TrialPruned()
 
-    _append_csv({
-        "trial_number":     trial.number,
-        "val_hit_rate":     best_hit_rate,
-        "val_macro_f1":     best_val.get("macro_f1", ""),
-        "val_spearman_rho": best_val.get("spearman_rho", ""),
-        "val_loss":         best_val.get("loss", ""),
-        "val_accuracy":     best_val.get("accuracy", ""),
-        "epochs":           tcfg["epochs"],
-        "learning_rate":    lr,
-        "weight_decay":     wd,
-        "d_model":          d_model,
-        "num_heads":        num_heads,
-        "num_layers":       num_layers,
-        "dropout":          dropout,
-    })
+        _append_csv({
+            "trial_number":     trial.number,
+            "val_hit_rate":     best_hit_rate,
+            "val_macro_f1":     best_val.get("macro_f1", ""),
+            "val_spearman_rho": best_val.get("spearman_rho", ""),
+            "val_loss":         best_val.get("loss", ""),
+            "val_accuracy":     best_val.get("accuracy", ""),
+            "epochs":           tcfg["epochs"],
+            "learning_rate":    lr,
+            "weight_decay":     wd,
+            "d_model":          d_model,
+            "num_heads":        num_heads,
+            "num_layers":       num_layers,
+            "dropout":          dropout,
+        })
 
-    # Clean up per-trial state.
-    for path in (_CURRENT_CKPT, _RESUME_FILE):
-        if os.path.exists(path):
-            os.remove(path)
+    finally:
+        # Always clean up so a stale checkpoint never poisons the next trial.
+        for path in (_CURRENT_CKPT, _RESUME_FILE):
+            if os.path.exists(path):
+                os.remove(path)
 
     return best_hit_rate
 
