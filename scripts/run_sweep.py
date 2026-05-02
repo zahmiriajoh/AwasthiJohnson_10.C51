@@ -264,7 +264,6 @@ if __name__ == "__main__":
     args = parse_args()
     os.makedirs(_CKPT_DIR, exist_ok=True)
 
-    global _BASE_CFG
     _BASE_CFG = load_config("configs/default.yaml")
 
     study = optuna.create_study(
