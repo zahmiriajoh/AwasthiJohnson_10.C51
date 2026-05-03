@@ -16,7 +16,7 @@ import yaml
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-_DB_PATH     = "checkpoints/sweep/optuna.db"
+_DB_PATH     = "results/260502_sweep_results_1/optuna.db"
 _BASE_CONFIG = "configs/default.yaml"
 
 
