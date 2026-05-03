@@ -1,14 +1,18 @@
 """Load the NucB landscape CSV and partition it into train / test pools.
 
-The `generations` column in landscape.csv stores a tuple (as a Python literal
-string) of every experimental round each variant was screened in. We parse
-each cell into a frozenset of lowercase tokens so set-membership tests work
-regardless of formatting.
+Two split modes are supported, selected via `cfg["split"]["mode"]`:
 
-A variant ends up in the TRAIN pool iff its generation set intersects the
-train generations. A variant ends up in the TEST pool iff its set intersects
-the test generations AND does NOT intersect the train generations — this
-guarantees the same physical variant is never in both splits.
+* `generation` — the original setup. Variants are routed by which experimental
+  round(s) they appeared in. Each row's `generations` cell is a stringified
+  tuple of round tokens (e.g. "('g1', 'g2')"); we parse it to a frozenset and
+  test set-membership.
+
+* `mutation_count` — split on the integer `num_mutations` column. Train pool
+  is `num_mutations < threshold`; test pool is `num_mutations >= threshold`.
+  Default threshold = 2 (single-mutants and WT for training; multi-mutants
+  for testing).
+
+In both modes, the same physical variant is never put in both splits.
 """
 
 from __future__ import annotations
@@ -44,20 +48,14 @@ def parse_generations(cell) -> frozenset:
     return frozenset({str(obj).lower()})
 
 
-def load_and_split(
-    cfg: dict,
+# ---------------------------------------------------------------------------
+# Split implementations
+# ---------------------------------------------------------------------------
+
+def _split_by_generation(
+    df: pd.DataFrame, d: dict, s: dict
 ) -> tuple[pd.DataFrame, pd.DataFrame | None, list[str]]:
-    """Return (train_df, test_df_or_None, all_generation_tokens) per `cfg`.
-
-    `test_df` is None iff `split.test_generations == 'random_holdout'`, in
-    which case the caller should make a stratified holdout from `train_df`.
-    """
-    d = cfg["data"]
-    s = cfg["split"]
-
-    df = pd.read_csv(d["path"])
-    df = df.dropna(subset=[d["sequence_col"], d["target_col"]]).reset_index(drop=True)
-
+    """Train/test split on the `generations` column."""
     if d["generation_col"] not in df.columns:
         raise ValueError(
             f"Column '{d['generation_col']}' not found. "
@@ -90,9 +88,77 @@ def load_and_split(
                 f"Test generation(s) {missing_te} not found. Available: {all_tokens}"
             )
 
-    # Variants that appear in both pools go to TRAIN only.
+    # Variants in both pools go to TRAIN only.
     test_mask = gen_sets.apply(
         lambda g: bool(g & test_gens) and not (g & train_gens)
     )
     df_test = df[test_mask].reset_index(drop=True)
     return df_train, df_test, all_tokens
+
+
+def _split_by_mutation_count(
+    df: pd.DataFrame, d: dict, s: dict
+) -> tuple[pd.DataFrame, pd.DataFrame | None, list[str]]:
+    """Train/test split on the `num_mutations` column.
+
+    Train pool = num_mutations < threshold, test pool = num_mutations >= threshold.
+    """
+    col = s.get("mutation_count_col", "num_mutations")
+    threshold = int(s.get("mutation_count_threshold", 2))
+
+    if col not in df.columns:
+        raise ValueError(
+            f"Mutation-count column '{col}' not found. "
+            f"Available columns: {list(df.columns)}"
+        )
+
+    n_mut = pd.to_numeric(df[col], errors="coerce")
+    bad = n_mut.isna().sum()
+    if bad:
+        print(f"  WARNING: dropping {bad} rows with non-numeric '{col}'")
+        df = df.loc[n_mut.notna()].reset_index(drop=True)
+        n_mut = n_mut.loc[n_mut.notna()].reset_index(drop=True)
+    n_mut = n_mut.astype(int)
+
+    df_train = df[n_mut < threshold].reset_index(drop=True)
+
+    tg = s.get("test_set", "complement")
+    if tg == "random_holdout":
+        return df_train, None, []
+    if tg != "complement":
+        raise ValueError(
+            f"For split.mode='mutation_count', test_set must be 'complement' "
+            f"or 'random_holdout' (got {tg!r})."
+        )
+
+    df_test = df[n_mut >= threshold].reset_index(drop=True)
+    return df_train, df_test, []
+
+
+# ---------------------------------------------------------------------------
+# Public entry point
+# ---------------------------------------------------------------------------
+
+def load_and_split(
+    cfg: dict,
+) -> tuple[pd.DataFrame, pd.DataFrame | None, list[str]]:
+    """Return (train_df, test_df_or_None, all_generation_tokens) per `cfg`.
+
+    `test_df` is None iff the test set is a random holdout drawn from the
+    train pool — the caller is responsible for making that holdout.
+    The third element is only meaningful for `mode='generation'`.
+    """
+    d = cfg["data"]
+    s = cfg["split"]
+
+    df = pd.read_csv(d["path"])
+    df = df.dropna(subset=[d["sequence_col"], d["target_col"]]).reset_index(drop=True)
+
+    mode = s.get("mode", "generation")
+    if mode == "generation":
+        return _split_by_generation(df, d, s)
+    if mode == "mutation_count":
+        return _split_by_mutation_count(df, d, s)
+    raise ValueError(
+        f"Unknown split.mode={mode!r}. Use 'generation' or 'mutation_count'."
+    )

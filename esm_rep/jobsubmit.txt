@@ -1,1 +1,1 @@
-python train.py --config config.yaml
+python result_analysis_nmut_split.py --config config.yaml

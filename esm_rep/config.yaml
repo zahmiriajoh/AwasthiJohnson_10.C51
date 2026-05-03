@@ -11,33 +11,50 @@
 
 data:
   # Path to landscape.csv from https://github.com/google-deepmind/nuclease_design
-  path: landscape.csv
+  path: data/landscape.csv
   sequence_col: sequence
   target_col: activity_level
   generation_col: generations
 
 split:
-  # Which experimental generation(s) to TRAIN on. Values are case-insensitive
-  # and matched by set-membership against the (potentially multi-valued)
-  # `generations` column. Examples:
-  #   train_generations: [g1]            # the initial epPCR library
-  #   train_generations: [g1, g2]        # G1 + G2 combined
-  train_generations: [g1, g2]
+  # Choose one of:
+  #   generation     — partition by which experimental round each variant
+  #                    appeared in (e.g. g1, g2, g3, g4)
+  #   mutation_count — partition by the integer `num_mutations` column.
+  #                    
+  mode: mutation_count
+
+  # ---- Settings used when mode == 'generation' --------------------------
+  # Values are case-insensitive and matched by set-membership against the
+  # (potentially multi-valued) `generations` column to avoid overlaps.
+  # Variants that appear in BOTH pools are kept in train only.
+  # Examples:
+  #   train_generations: [g1]
+  #   train_generations: [g1, g2]
+  train_generations: [g1]
 
   # Which generation(s) to TEST on. Three options:
   #   - explicit list, e.g. [g2, g3, g4]
   #   - 'all_others'      = every generation token not listed in train_generations
   #   - 'random_holdout'  = stratified random holdout from the train pool
-  # Variants that appear in BOTH pools are kept in train only — the same
-  # physical variant will never end up in both splits.
+  
   test_generations: all_others
 
-  # Only used if test_generations == 'random_holdout':
+  # ---- Settings used when mode == 'mutation_count' ----------------------
+  # Train pool = rows with num_mutations < threshold.
+  # Default 3 means: train on WT + single mutants + double mutants, test on multi-mutants.
+  mutation_count_col: num_mutations
+  mutation_count_threshold: 3
+  # 'complement'      = test on rows with num_mutations >= threshold
+  # 'random_holdout'  = stratified random holdout from the train pool
+  test_set: complement
+
+  # Used only when test_generations or test_set == 'random_holdout':
   test_size: 0.2
 
 embedding:
-  # ESM-2 variant. t6_8M is CPU-friendly; t12_35M is a step up in quality.
-  model_name: facebook/esm2_t6_8M_UR50D
+  # ESM-2 variant, simplest one chosen
+  model_name: facebook/esm2_t12_35M_UR50D #esm2_t6_8M_UR50D
   cache_dir: ./esm_cache
   batch_size: 8
   chunk_size: 1024
@@ -45,12 +62,11 @@ embedding:
 
 classifier:
   # Inverse regularization strengths to search over via CV.
-  Cs: [0.01, 0.1, 1.0, 10.0]
+  Cs: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]  
   cv_folds: 5
   max_iter: 5000
   scoring: f1_macro
-  # Reweight classes inversely to their frequency. Strongly recommended given
-  # the heavy imbalance in NucB activity classes.
-  class_weight: balanced
+  # Reweight classes inversely to their frequency
+  class_weight: null # or 'balanced'
 
 seed: 42
