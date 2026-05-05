@@ -397,7 +397,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="config.yaml")
     ap.add_argument("--output-dir", default="output")
-    ap.add_argument("--subdir", default="nmut_split_unbalanced_bigmodel")
+    ap.add_argument("--subdir", default="nmut_split_balanced_bigmodel")
     args = ap.parse_args()
 
     cfg = load_config(args.config)

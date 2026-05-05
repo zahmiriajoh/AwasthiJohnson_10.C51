@@ -1,1 +1,1 @@
-python result_analysis_nmut_split.py --config config.yaml
+python tsne_wt_vs_a73r.py --config config.yaml

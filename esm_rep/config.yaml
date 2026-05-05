@@ -54,7 +54,7 @@ split:
 
 embedding:
   # ESM-2 variant, simplest one chosen
-  model_name: facebook/esm2_t12_35M_UR50D #esm2_t6_8M_UR50D
+  model_name: facebook/esm2_t6_8M_UR50D #esm2_t12_35M_UR50D #esm2_t6_8M_UR50D
   cache_dir: ./esm_cache
   batch_size: 8
   chunk_size: 1024
@@ -62,11 +62,11 @@ embedding:
 
 classifier:
   # Inverse regularization strengths to search over via CV.
-  Cs: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]  
+  Cs: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]  
   cv_folds: 5
   max_iter: 5000
   scoring: f1_macro
   # Reweight classes inversely to their frequency
-  class_weight: null # or 'balanced'
+  class_weight: balanced # or 'balanced'
 
 seed: 42
