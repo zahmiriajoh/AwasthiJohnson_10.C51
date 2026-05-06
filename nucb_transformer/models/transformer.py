@@ -24,10 +24,17 @@ class MultiHeadSelfAttention(nn.Module):
             d_model, num_heads, dropout=dropout, batch_first=True
         )
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        mask: torch.Tensor | None = None,
+        return_weights: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         # x: (batch, seq_len, d_model)
         # mask: (batch, seq_len) bool, True = pad → ignored by attention
-        out, _ = self.attn(x, x, x, key_padding_mask=mask)
+        out, attn_weights = self.attn(x, x, x, key_padding_mask=mask, need_weights=return_weights)
+        if return_weights:
+            return out, attn_weights
         return out
 
 
@@ -49,9 +56,21 @@ class TransformerEncoderBlock(nn.Module):
             nn.Dropout(dropout),
         )
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
-        x = x + self.attn(self.norm1(x), mask)
+    def forward(
+        self,
+        x: torch.Tensor,
+        mask: torch.Tensor | None = None,
+        return_weights: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        if return_weights:
+            attn_out, attn_weights = self.attn(self.norm1(x), mask, return_weights=True)
+            x = x + attn_out
+        else:
+            x = x + self.attn(self.norm1(x), mask)
+            attn_weights = None
         x = x + self.ffn(self.norm2(x))
+        if return_weights:
+            return x, attn_weights
         return x
 
 
@@ -97,16 +116,27 @@ class NucleaseTransformer(nn.Module):
         self,
         tokens: torch.Tensor,                      # (batch, seq_len) int64
         padding_mask: torch.Tensor | None = None,  # (batch, seq_len) bool, True = pad
-    ) -> torch.Tensor:
+        return_attention: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, list[torch.Tensor]]:
         # Returns raw logits (batch, num_classes).
         # Apply softmax externally for inference; use with cross-entropy for training.
+        # When return_attention=True, returns (logits, attn_weights) where attn_weights
+        # is a list of (batch, seq_len, seq_len) tensors, one per layer.
         x = self.embedding(tokens)       # (batch, seq_len, d_model)
         x = self.pos_enc(x)
+        attn_list = []
         for layer in self.layers:
-            x = layer(x, padding_mask)
+            if return_attention:
+                x, w = layer(x, padding_mask, return_weights=True)
+                attn_list.append(w)
+            else:
+                x = layer(x, padding_mask)
         x = self.norm(x)
         x = x.mean(dim=1)               # mean pool over positions → (batch, d_model)
-        return self.head(x)
+        logits = self.head(x)
+        if return_attention:
+            return logits, attn_list
+        return logits
 
     def predict_proba(self, tokens: torch.Tensor) -> torch.Tensor:
         """Convenience wrapper: returns softmax probabilities (batch, num_classes)."""
