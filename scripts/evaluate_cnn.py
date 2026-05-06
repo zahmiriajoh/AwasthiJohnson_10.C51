@@ -15,7 +15,6 @@ Usage:
 """
 
 import argparse
-import numpy as np
 import torch
 from sklearn.metrics import f1_score
 
@@ -32,7 +31,7 @@ def parse_args():
     p = argparse.ArgumentParser(description="Evaluate a trained NucleaseConvNet checkpoint")
     p.add_argument("--checkpoint", default=None,
                    help="Path to .pt file; omit to auto-find best in --checkpoint_dir")
-    p.add_argument("--checkpoint_dir", default="checkpoints/cnn/")
+    p.add_argument("--checkpoint_dir", default="checkpoints/training_cnn/")
     p.add_argument("--config", default="configs/default_cnn.yaml")
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--save_predictions", default=None, metavar="CSV",

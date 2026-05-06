@@ -24,6 +24,6 @@ training:
   warmup_steps: 500        # linear LR warmup before cosine decay
   grad_clip: 1.0
   seed: 42
-  checkpoint_dir: checkpoints/cnn/
+  checkpoint_dir: checkpoints/training_cnn/
   log_wandb: false         # set true to enable Weights & Biases logging
   wandb_project: nuclease_cnn
