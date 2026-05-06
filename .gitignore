@@ -207,10 +207,10 @@ marimo/_lsp/
 __marimo__/
 
 # Project-specific
+# the checkpoints aren't that big bc I only save the best one from Engaging
 # checkpoints/
-*.pt
+#*.pt
 *.pth
 wandb/
 results/
-checkpoints/sweep/
 engaging/
