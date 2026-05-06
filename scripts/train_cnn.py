@@ -4,6 +4,7 @@ CLI entrypoint for training the CNN.
 Usage:
     python scripts/train_cnn.py
     python scripts/train_cnn.py --config configs/default_cnn.yaml
+    python scripts/train_cnn.py --config configs/best_cnn.yaml
 """
 
 import argparse

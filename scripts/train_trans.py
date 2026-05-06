@@ -2,8 +2,9 @@
 CLI entrypoint for training.
 
 Usage:
-    python scripts/train.py
-    python scripts/train.py --config configs/default.yaml
+    python scripts/train_trans.py
+    python scripts/train_trans.py --config configs/default.yaml
+    python scripts/train_trans.py --config configs/best_trans.yaml
 """
 
 import argparse
