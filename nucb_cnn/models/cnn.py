@@ -78,14 +78,24 @@ class NucleaseConvNet(nn.Module):
         self.flatten = nn.Flatten()
         self.head = ClassificationHead(flat_dim, num_classes, hidden_dim=hidden_dim, dropout=dropout)
 
-    def forward(self, tokens: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        tokens: torch.Tensor,
+        return_embeddings: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         # tokens: (batch, seq_len) int64
         # Returns raw logits (batch, num_classes).
+        # return_embeddings=True → (logits, embeddings) where embeddings is the
+        #                          flattened conv representation (batch, num_filters*seq_len)
+        #                          before the classification head.
         x = F.one_hot(tokens, num_classes=self.vocab_size).float()  # (batch, seq_len, vocab)
         x = x.permute(0, 2, 1)          # (batch, vocab, seq_len) — Conv1d is channels-first
         x = self.conv_stack(x)           # (batch, num_filters, seq_len)
-        x = self.flatten(x)              # (batch, num_filters * seq_len)
-        return self.head(x)              # (batch, num_classes)
+        embeddings = self.flatten(x)     # (batch, num_filters * seq_len)
+        logits = self.head(embeddings)   # (batch, num_classes)
+        if return_embeddings:
+            return logits, embeddings
+        return logits
 
     def predict_proba(self, tokens: torch.Tensor) -> torch.Tensor:
         """Convenience wrapper: returns softmax probabilities (batch, num_classes)."""

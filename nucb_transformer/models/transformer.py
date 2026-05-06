@@ -117,11 +117,14 @@ class NucleaseTransformer(nn.Module):
         tokens: torch.Tensor,                      # (batch, seq_len) int64
         padding_mask: torch.Tensor | None = None,  # (batch, seq_len) bool, True = pad
         return_attention: bool = False,
-    ) -> torch.Tensor | tuple[torch.Tensor, list[torch.Tensor]]:
+        return_embeddings: bool = False,
+    ) -> torch.Tensor | tuple:
         # Returns raw logits (batch, num_classes).
         # Apply softmax externally for inference; use with cross-entropy for training.
-        # When return_attention=True, returns (logits, attn_weights) where attn_weights
-        # is a list of (batch, seq_len, seq_len) tensors, one per layer.
+        # return_attention=True  → (logits, attn_list) where attn_list is one
+        #                          (batch, seq_len, seq_len) tensor per layer.
+        # return_embeddings=True → (logits, embeddings) where embeddings is the
+        #                          mean-pooled (batch, d_model) vector before the head.
         x = self.embedding(tokens)       # (batch, seq_len, d_model)
         x = self.pos_enc(x)
         attn_list = []
@@ -132,10 +135,12 @@ class NucleaseTransformer(nn.Module):
             else:
                 x = layer(x, padding_mask)
         x = self.norm(x)
-        x = x.mean(dim=1)               # mean pool over positions → (batch, d_model)
-        logits = self.head(x)
+        embeddings = x.mean(dim=1)       # (batch, d_model)
+        logits = self.head(embeddings)
         if return_attention:
             return logits, attn_list
+        if return_embeddings:
+            return logits, embeddings
         return logits
 
     def predict_proba(self, tokens: torch.Tensor) -> torch.Tensor:
