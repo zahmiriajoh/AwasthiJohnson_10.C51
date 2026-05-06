@@ -67,15 +67,16 @@ if __name__ == "__main__":
         num_workers=dcfg["num_workers"],
     )
 
-    # Store only the argmax per batch — O(N) ints instead of O(N*4) floats.
-    all_preds, all_labels = [], []
+    all_preds, all_probs, all_labels = [], [], []
     with torch.no_grad():
         for tokens, labels in test_loader:
             logits = model(tokens.to(device))
             all_preds.append(logits.argmax(dim=-1).cpu())
+            all_probs.append(torch.softmax(logits, dim=-1).cpu())
             all_labels.append(labels)
 
-    preds_np = torch.cat(all_preds).numpy()
+    preds_np  = torch.cat(all_preds).numpy()
+    probs_np  = torch.cat(all_probs).numpy()
     labels_np = torch.cat(all_labels).numpy()
 
     # All metrics derived from class indices (no logits needed).
@@ -103,6 +104,8 @@ if __name__ == "__main__":
     test_df = test_df.reset_index(drop=True)
     test_df["predicted_class"] = [ACTIVITY_CLASSES[i] for i in preds_np]
     test_df["correct"] = test_df["predicted_class"] == test_df["activity_level"]
+    for i, cls in enumerate(ACTIVITY_CLASSES):
+        test_df[f"prob_{cls}"] = probs_np[:, i]
 
     print(f"\nSample predictions (first 10 rows):")
     print(test_df[["sequence", "activity_level", "predicted_class", "correct"]].head(10).to_string())
