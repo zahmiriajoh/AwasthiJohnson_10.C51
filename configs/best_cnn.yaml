@@ -1,0 +1,22 @@
+model:
+  num_filters: 32
+  kernel_size: 3
+  num_conv_layers: 3
+  hidden_dim: 128
+  dropout: 0.04246782213565523
+  seq_len: 142
+data:
+  max_train_mutations: 2
+  val_frac: 0.1
+  batch_size: 256
+  num_workers: 4
+training:
+  epochs: 50
+  learning_rate: 0.0001519934830130982
+  weight_decay: 5.415244119402538e-05
+  warmup_steps: 500
+  grad_clip: 1.0
+  seed: 42
+  checkpoint_dir: checkpoints/cnn/
+  log_wandb: false
+  wandb_project: nuclease_cnn
