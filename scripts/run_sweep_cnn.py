@@ -277,7 +277,7 @@ if __name__ == "__main__":
     args = parse_args()
     os.makedirs(_CKPT_DIR, exist_ok=True)
 
-    _BASE_CFG = load_config("configs/cnn_default.yaml")
+    _BASE_CFG = load_config("configs/default_cnn.yaml")
 
     study = optuna.create_study(
         study_name=args.study_name,

@@ -71,15 +71,12 @@ class NucleaseConvNet(nn.Module):
             in_channels = num_filters
         self.conv_stack = nn.Sequential(*layers)
 
-        # Flatten then apply position-aware dense head.
+        # Flatten → Dense(hidden_dim, relu) → Dropout → logits(num_classes).
+        # Passing flat_dim directly into ClassificationHead gives exactly the
+        # DeepMind architecture: one hidden layer, not two.
         flat_dim = num_filters * seq_len
         self.flatten = nn.Flatten()
-        self.dense = nn.Sequential(
-            nn.Linear(flat_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(p=dropout),
-        )
-        self.out = ClassificationHead(hidden_dim, num_classes, dropout=dropout)
+        self.head = ClassificationHead(flat_dim, num_classes, hidden_dim=hidden_dim, dropout=dropout)
 
     def forward(self, tokens: torch.Tensor) -> torch.Tensor:
         # tokens: (batch, seq_len) int64
@@ -88,8 +85,7 @@ class NucleaseConvNet(nn.Module):
         x = x.permute(0, 2, 1)          # (batch, vocab, seq_len) — Conv1d is channels-first
         x = self.conv_stack(x)           # (batch, num_filters, seq_len)
         x = self.flatten(x)              # (batch, num_filters * seq_len)
-        x = self.dense(x)               # (batch, hidden_dim)
-        return self.out(x)               # (batch, num_classes)
+        return self.head(x)              # (batch, num_classes)
 
     def predict_proba(self, tokens: torch.Tensor) -> torch.Tensor:
         """Convenience wrapper: returns softmax probabilities (batch, num_classes)."""

@@ -105,7 +105,7 @@ def validate(
     return metrics
 
 
-def train(config_path: str = "configs/cnn_default.yaml"):
+def train(config_path: str = "configs/default_cnn.yaml"):
     """
     Full training run:
       1. Load config and data

@@ -17,7 +17,7 @@ import yaml
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 _DB_PATH     = "checkpoints/sweep_cnn/optuna.db"
-_BASE_CONFIG = "configs/cnn_default.yaml"
+_BASE_CONFIG = "configs/default_cnn.yaml"
 
 
 def parse_args():
