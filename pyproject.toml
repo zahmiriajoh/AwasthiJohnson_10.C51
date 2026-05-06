@@ -31,4 +31,4 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["nucb_transformer*"]
+include = ["nucb_transformer*", "nucb_cnn*"]
