@@ -45,7 +45,7 @@ python scripts/predict.py \
 pytest tests/
 ```
 
-## Key hyperparameters NEED TO CHECK THIS
+## Key hyperparameters NEED TO UPDATE THIS
 
 See [configs/default.yaml](configs/default.yaml) for the full list. Defaults are chosen to match the CNN's capacity:
 
@@ -59,7 +59,7 @@ See [configs/default.yaml](configs/default.yaml) for the full list. Defaults are
 
 To run a hyperparameter sweep: `wandb sweep configs/sweep.yaml`.
 
-## Repo structure
+## Repo structure ALSO NEED TO UPDATE THIS
 ```bash
 nucb_transformer/
 │
