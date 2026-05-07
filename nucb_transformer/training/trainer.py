@@ -3,6 +3,7 @@
 # ('activity > WT' and 'activity > A73R' are rare relative to 'non-functional').
 
 import os
+import json
 import math
 import logging
 import torch
@@ -153,6 +154,7 @@ def train(config_path: str = "configs/default.yaml"):
     # ── epoch loop ────────────────────────────────────────────────────────────
     os.makedirs(tcfg["checkpoint_dir"], exist_ok=True)
     best_val_acc = 0.0
+    history = []
     epoch_bar = tqdm(range(1, tcfg["epochs"] + 1), desc="epochs")
 
     for epoch in epoch_bar:
@@ -167,6 +169,14 @@ def train(config_path: str = "configs/default.yaml"):
             "val_loss":   f"{val_m['loss']:.4f}",
             "val_acc":    f"{val_m['accuracy']:.4f}",
             "hit_rate":   f"{val_m['hit_rate']:.4f}",
+        })
+
+        history.append({
+            "epoch":      epoch,
+            "train_loss": train_m["loss"],
+            "val_loss":   val_m["loss"],
+            "val_acc":    val_m["accuracy"],
+            "hit_rate":   val_m["hit_rate"],
         })
 
         if val_m["accuracy"] > best_val_acc:
@@ -186,5 +196,10 @@ def train(config_path: str = "configs/default.yaml"):
                 ckpt_path,
             )
             logger.info(f"  → new best val accuracy {best_val_acc:.4f}, saved to {ckpt_path}")
+
+    history_path = os.path.join(tcfg["checkpoint_dir"], "history.json")
+    with open(history_path, "w") as f:
+        json.dump(history, f, indent=2)
+    logger.info(f"Training history saved to {history_path}")
 
     return model
