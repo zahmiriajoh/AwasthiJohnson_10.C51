@@ -22,8 +22,8 @@ CLASS_COLORS = {
     "activity > A73R": "#cb181d",
 }
 
-cfg = load_config("../config.yaml")
-out_dir = Path("../output/tsne_v2")
+cfg = load_config("config.yaml")
+out_dir = Path("output/tsne_v2_bigmodel")
 out_dir.mkdir(parents=True, exist_ok=True)
 
 # Load full landscape and pick the three reference rows.
@@ -38,7 +38,7 @@ a33c_idx = int(df.index[parsed.apply(lambda t: t == (("A", 33, "C"),))][0])
 refs = [
     ("WT",   wt_idx,   "#000000"),
     ("A73R", a73r_idx, "#cb181d"),
-    ("A33C", a33c_idx, "#1f78b4"),
+    ("A33C", a33c_idx, "#BF00FF"),
 ]
 print(f"WT row {wt_idx}, A73R row {a73r_idx}, A33C row {a33c_idx}")
 
@@ -88,7 +88,7 @@ handles += [Line2D([0], [0], marker="*", linestyle="", markersize=14,
 ax.legend(handles=handles, loc="best", fontsize=9, framealpha=0.92)
 ax.set_xlabel("t-SNE 1")
 ax.set_ylabel("t-SNE 2")
-ax.set_title("ESM-2 mean-pooled embeddings — full landscape t-SNE")
+ax.set_title("ESM-2 mean-pooled embeddings t-SNE")
 ax.set_aspect("equal", adjustable="datalim")
 plt.tight_layout()
 plt.savefig(out_dir / "tsne_full_landscape.png", dpi=150, bbox_inches="tight")

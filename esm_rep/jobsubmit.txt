@@ -1,1 +1,1 @@
-python tsne_per_residue_v2.py
+python cosine_per_residue_v2.py

@@ -18,8 +18,8 @@ from transformers import AutoModel, AutoTokenizer
 
 from data_utils import load_config
 
-cfg = load_config("../config.yaml")
-out_dir = Path("../output/tsne_v2")
+cfg = load_config("config.yaml")
+out_dir = Path("output/tsne_v2_bigmodel")
 out_dir.mkdir(parents=True, exist_ok=True)
 
 # Load CSV and pick the three reference rows.
