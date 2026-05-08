@@ -1,1 +1,1 @@
-python cosine_per_residue_v2.py
+python train.py --config config.yaml

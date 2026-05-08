@@ -6,7 +6,6 @@ Outputs to ./output/nmut_split/:
   - confusion_matrix_dist_<bin>.png       (stratified by min linear distance,
                                            ≥3-mutation variants only)
   - hits_at_k.png                         (matches paper Table S5)
-  - class_distribution.png                (train vs test by mutation count)
 """
 
 import ast
@@ -39,10 +38,6 @@ HITS_AT_K = 1000
 HIT_THRESHOLDS = {
     "wt":   {"activity > WT", "activity > A73R"},
     "a73r": {"activity > A73R"},
-}
-PAPER_BASELINES = {
-    "wt":   {"LR": 0.44, "CNN": 0.82},
-    "a73r": {"LR": 0.09, "CNN": 0.21},
 }
 ORDINAL_ORDER = [
     "non-functional", "activity > 0", "activity > WT", "activity > A73R",
@@ -82,13 +77,13 @@ def plot_cm(y_true, y_pred, labels, title, out_path):
 # -----------------------------------------------------------------------------
 
 cfg = load_config("config.yaml")
-out_dir = Path("output") / "nmut_split_v2_bigmodel"
+out_dir = Path("output") / "nmut_split_big_final"
 out_dir.mkdir(parents=True, exist_ok=True)
 print(f"Writing outputs to {out_dir}/")
 
 seq_col = cfg["data"]["sequence_col"]
 target_col = cfg["data"]["target_col"]
-df_train, df_test, _ = load_and_split(cfg)
+df_train, df_test = load_and_split(cfg)
 print(f"Train: {len(df_train)} | Test: {len(df_test)}")
 
 sequences = (df_train[seq_col].astype(str).tolist()
@@ -118,7 +113,7 @@ all_labels = sorted(set(y_te) | set(y_pred) | set(classes))
 # -----------------------------------------------------------------------------
 
 print("\n[1/5] Overall confusion matrix:")
-plot_cm(y_te, y_pred, all_labels, "Overall test set",
+plot_cm(y_te, y_pred, all_labels, "ESM-2, 35M parameters, overall test set",
         out_dir / "confusion_matrix_overall.png")
 
 # -----------------------------------------------------------------------------
@@ -132,7 +127,7 @@ for label, predicate in MUTATION_COUNT_BINS:
     if mask.sum() == 0:
         continue
     plot_cm(y_te[mask], y_pred[mask], all_labels,
-            f"Mutation count: {label}",
+            f"ESM-2, 35M parameters, mutation count: {label}",
             out_dir / f"confusion_matrix_mut_{label.replace('+', 'plus')}.png")
 
 # -----------------------------------------------------------------------------
@@ -151,7 +146,7 @@ for label, predicate in MIN_DISTANCE_BINS:
     if mask.sum() == 0:
         continue
     plot_cm(y_te[mask], y_pred[mask], all_labels,
-            f"≥3 mutations, min linear distance: {label}",
+            f"ESM-2, 35M parameters, ≥3 mutations, min linear distance: {label}",
             out_dir / f"confusion_matrix_dist_{label.replace('+', 'plus')}.png")
 
 # -----------------------------------------------------------------------------
@@ -179,67 +174,16 @@ if hits:
     vals = [hits[n][0] for n in names]
     bars = ax.bar(names, vals, color=["#3b7dd8", "#d8893b"][:len(names)])
     ax.set_ylim(0, 1)
-    ax.set_ylabel(f"Hits@{k_eff} (precision-at-k)")
-    ax.set_title(f"Ranking quality at top-{k_eff}")
+    ax.set_ylabel(f"Hits@{k_eff}")
+    ax.set_title(f"ESM-2, 35M parameters, top {k_eff} hits in test set")
     for bar, name in zip(bars, names):
         v, n_hits, _ = hits[name]
         ax.text(bar.get_x() + bar.get_width()/2, v + 0.02,
                 f"{v:.3f}\n({n_hits}/{k_eff})",
                 ha="center", va="bottom", fontsize=10)
-        x_left, x_right = bar.get_x(), bar.get_x() + bar.get_width()
-        for label, ref in PAPER_BASELINES.get(name, {}).items():
-            ls = "--" if label == "LR" else ":"
-            ax.hlines(ref, x_left, x_right, color="gray", ls=ls, lw=1)
-            ax.text(x_right + 0.02, ref, f"paper {label}: {ref:.2f}",
-                    color="gray", fontsize=8, va="center")
     fig.tight_layout()
     fig.savefig(out_dir / "hits_at_k.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"  saved hits_at_k.png")
-
-# -----------------------------------------------------------------------------
-# 5. Class distribution by mutation count, train vs test
-# -----------------------------------------------------------------------------
-
-print("\n[5/5] Class distribution:")
-present = set(df_train[target_col]) | set(df_test[target_col])
-dist_classes = [c for c in ORDINAL_ORDER if c in present]
-max_mut = int(max(df_train["num_mutations"].max(),
-                  df_test["num_mutations"].max()))
-edges = sorted({e for e in [0, 1, 2, 3, 5, 10, 15, max(20, max_mut + 1)]
-                if e <= max_mut + 1})
-bin_labels = [str(edges[i]) if edges[i+1] - edges[i] == 1
-              else f"{edges[i]}-{edges[i+1]-1}"
-              for i in range(len(edges) - 1)]
-bin_labels[-1] = f"{edges[-2]}+"
-
-def get_counts(df):
-    nm = df["num_mutations"].astype(int).values
-    cls = df[target_col].astype(str).values
-    out = np.zeros((len(bin_labels), len(dist_classes)), dtype=int)
-    for i, (lo, hi) in enumerate(zip(edges[:-1], edges[1:])):
-        in_bin = (nm >= lo) & (nm < hi)
-        for j, c in enumerate(dist_classes):
-            out[i, j] = int((in_bin & (cls == c)).sum())
-    return out
-
-cnt_tr, cnt_te = get_counts(df_train), get_counts(df_test)
-fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-cmap = plt.cm.viridis(np.linspace(0.15, 0.85, len(dist_classes)))
-for ax, cnt, name in [(axes[0], cnt_tr, "Train"), (axes[1], cnt_te, "Test")]:
-    bottom = np.zeros(len(bin_labels))
-    for j, c in enumerate(dist_classes):
-        ax.bar(bin_labels, cnt[:, j], bottom=bottom, color=cmap[j], label=c)
-        bottom += cnt[:, j]
-    ax.set_xlabel("Mutations from WT")
-    ax.set_ylabel("Variant count")
-    ax.set_title(f"{name} pool (n = {int(cnt.sum())})")
-axes[1].legend(loc="center left", bbox_to_anchor=(1.02, 0.5),
-               title="Activity class", fontsize=8)
-fig.suptitle("Class distribution by mutation count")
-fig.tight_layout()
-fig.savefig(out_dir / "class_distribution.png", dpi=150, bbox_inches="tight")
-plt.close(fig)
-print(f"  saved class_distribution.png")
 
 print(f"\nAll outputs in {out_dir}/")
