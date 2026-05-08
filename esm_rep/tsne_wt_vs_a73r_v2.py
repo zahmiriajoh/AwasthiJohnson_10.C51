@@ -23,7 +23,7 @@ CLASS_COLORS = {
 }
 
 cfg = load_config("config.yaml")
-out_dir = Path("output/tsne_v2_bigmodel")
+out_dir = Path("output/tsne_v2")
 out_dir.mkdir(parents=True, exist_ok=True)
 
 # Load full landscape and pick the three reference rows.
@@ -88,7 +88,7 @@ handles += [Line2D([0], [0], marker="*", linestyle="", markersize=14,
 ax.legend(handles=handles, loc="best", fontsize=9, framealpha=0.92)
 ax.set_xlabel("t-SNE 1")
 ax.set_ylabel("t-SNE 2")
-ax.set_title("ESM-2 mean-pooled embeddings t-SNE")
+ax.set_title("ESM-2 (8M parameters) mean-pooled embeddings t-SNE")
 ax.set_aspect("equal", adjustable="datalim")
 plt.tight_layout()
 plt.savefig(out_dir / "tsne_full_landscape.png", dpi=150, bbox_inches="tight")

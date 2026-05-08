@@ -53,8 +53,8 @@ split:
   test_size: 0.2
 
 embedding:
-  # ESM-2 variant, simplest one chosen
-  model_name: facebook/esm2_t12_35M_UR50D #esm2_t12_35M_UR50D #esm2_t6_8M_UR50D
+  # ESM-2 variant
+  model_name: facebook/esm2_t6_8M_UR50D #esm2_t12_35M_UR50D #esm2_t6_8M_UR50D
   cache_dir: ./esm_cache
   batch_size: 8
   chunk_size: 1024

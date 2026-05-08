@@ -19,7 +19,7 @@ from transformers import AutoModel, AutoTokenizer
 from data_utils import load_config
 
 cfg = load_config("config.yaml")
-out_dir = Path("output/tsne_v2_bigmodel")
+out_dir = Path("output/tsne_v2")
 out_dir.mkdir(parents=True, exist_ok=True)
 
 # Load CSV and pick the three reference rows.
@@ -72,8 +72,8 @@ for i, d in enumerate(dists):
     ax.axvline(r["mut"], color=r["color"], linestyle=":", linewidth=1.0, alpha=0.5)
 
 ax.set_xlabel("Residue position")
-ax.set_ylabel("Cosine distance from WT (per-residue ESM)")
-ax.set_title("Per-position embedding divergence from WT")
+ax.set_ylabel("Cosine distance from WT (per residue)")
+ax.set_title("Per-residue embedding divergence from WT (ESM-2, 8M parameters)")
 ax.set_xlim(0, L + 1)
 ax.set_ylim(bottom=0)
 ax.grid(alpha=0.3)
