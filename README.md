@@ -46,7 +46,16 @@ python scripts/evaluate_cnn.py   --save_predictions results/cnn_test_predictions
 # 4. Predict on new variants
 # The 03_predict_sandbox.ipynb contains the code to poke around the data and test on a few novel sequences
 ```
-
+## Logistic regression classifier using ESM-2 embeddings:
+```bash
+cd esm_rep
+# Embed sequences and train the logistic regression classifier
+python train.py --config config.yaml
+# t-SNE of the embeddings 
+python tsne_wt_vs_a73r_v2.py
+# Confusion matrices corresponding to mutation split
+python confusion_matrix_nmut_split.py
+```
 ## Repo structure
 ```bash
 AwasthiJohnson_10.C51/
