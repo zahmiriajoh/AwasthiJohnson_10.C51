@@ -1,4 +1,4 @@
-# nucb_transformer
+# Comparison of Supervised Learning Architectures for Protein Sequence-to-Fitness Prediction Tasks
 
 A transformer-based sequence-to-activity classifier for NucB nuclease variants, built for comparison to the CNN described in:
 
@@ -12,12 +12,12 @@ The original CNN takes variable-region amino acid sequences from NucB variants a
 
 | Class | Meaning |
 |---|---|
-| `non-functional` | No function |
+| `non-functional` | No nuclease function at pH7 |
 | `activity > 0` | Low function, below WT |
 | `activity > WT` | Above WT activity |
 | `activity > A73R` | Above the A73R benchmark variant |
 
-This repo replaces the CNN with a **transformer encoder** that attends globally over residue positions, hypothetically letting it capture long-range epistatic interactions that local convolution misses. The label space, preprocessing pipeline, and evaluation metrics are kept identical for direct comparison.
+This repo mirrors the CNN with a **transformer encoder** that attends globally over residue positions, hypothetically letting it capture long-range epistatic interactions that local convolution misses. The label space, preprocessing pipeline, and evaluation metrics are kept identical for direct comparison.
 
 
 ## Quickstart
@@ -28,13 +28,16 @@ This repo replaces the CNN with a **transformer encoder** that attends globally 
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-# This installs both packages (nucb_transformer and nucb_cnn) as editable installs, along with all dependencies including the DeepMind nuclease_design package (which includes the data).
+# This installs both packages (nucb_transformer and nucb_cnn) as editable installs,
+#along with all dependencies including the DeepMind nuclease_design package
+#(which includes the data).
 
 # 2. Train
 python scripts/train_trans.py --config configs/best_trans.yaml   # transformer
 python scripts/train_cnn.py   --config configs/best_cnn.yaml     # CNN
-# The "best" configs are from the hyperparameter sweep
-# Checkpoints are saved to checkpoints/training_trans/ and checkpoints/training_cnn/ as epoch_NNN_accX.XXXX.pt
+# The "best" configs are from the hyperparameter sweep.
+# Checkpoints are saved to checkpoints/training_trans/
+#and checkpoints/training_cnn/ as epoch_NNN_accX.XXXX.pt
 
 # 3. Evaluate on the held-out test set (automatically uses best training checkpoint)
 python scripts/evaluate_trans.py --save_predictions results/trans_test_predictions.csv
@@ -42,7 +45,7 @@ python scripts/evaluate_cnn.py   --save_predictions results/cnn_test_predictions
 
 # 4. Predict on new variants
 # The 03_predict_sandbox.ipynb contains the code to poke around the data and test on a few novel sequences
-
+```
 
 ## Repo structure
 ```bash
