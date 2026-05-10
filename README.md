@@ -12,110 +12,139 @@ The original CNN takes variable-region amino acid sequences from NucB variants a
 
 | Class | Meaning |
 |---|---|
-| `<WT` | Below wildtype activity |
-| `WT` | Wildtype-level activity |
-| `>WT` | Above wildtype activity |
-| `>=A73R` | At or above the A73R benchmark variant |
+| `non-functional` | No function |
+| `activity > 0` | Low function, below WT |
+| `activity > WT` | Above WT activity |
+| `activity > A73R` | Above the A73R benchmark variant |
 
 This repo replaces the CNN with a **transformer encoder** that attends globally over residue positions, hypothetically letting it capture long-range epistatic interactions that local convolution misses. The label space, preprocessing pipeline, and evaluation metrics are kept identical for direct comparison.
 
 
-## Quickstart NOT ACTUALLY WRITTEN YET, WILL NOT WORK
+## Quickstart
 
 ```bash
-# 1. Install (editable)
+# 1. Set up nucb environment
+
+python -m venv .venv
+source .venv/bin/activate
 pip install -e ".[dev]"
+# This installs both packages (nucb_transformer and nucb_cnn) as editable installs, along with all dependencies including the DeepMind nuclease_design package (which includes the data).
 
-# 2. Download data — see data/README.md for instructions
+# 2. Train
+python scripts/train_trans.py --config configs/best_trans.yaml   # transformer
+python scripts/train_cnn.py   --config configs/best_cnn.yaml     # CNN
+# The "best" configs are from the hyperparameter sweep
+# Checkpoints are saved to checkpoints/training_trans/ and checkpoints/training_cnn/ as epoch_NNN_accX.XXXX.pt
 
-# 3. Train
-python scripts/train.py --config configs/default.yaml
+# 3. Evaluate on the held-out test set (automatically uses best training checkpoint)
+python scripts/evaluate_trans.py --save_predictions results/trans_test_predictions.csv
+python scripts/evaluate_cnn.py   --save_predictions results/cnn_test_predictions.csv
 
-# 4. Evaluate on the held-out test set
-python scripts/evaluate.py --checkpoint checkpoints/best.pt
+# 4. Predict on new variants
+# The 03_predict_sandbox.ipynb contains the code to poke around the data and test on a few novel sequences
 
-# 5. Predict on new variants
-python scripts/predict.py \
-    --checkpoint checkpoints/best.pt \
-    --input_csv my_variants.csv \
-    --output_csv predictions.csv \
-    --wildtype <WILDTYPE_AA_SEQUENCE>
 
-# 6. Run tests
-pytest tests/
-```
-
-## Key hyperparameters NEED TO UPDATE THIS
-
-See [configs/default.yaml](configs/default.yaml) for the full list. Defaults are chosen to match the CNN's capacity:
-
-| Parameter | Value | Rationale |
-|---|---|---|
-| `num_layers` | 3 | Mirrors 3 CNN conv blocks |
-| `d_model` | 128 | Comparable parameter count to conv-32 + dense-64 |
-| `num_heads` | 4 | Divides `d_model` evenly |
-| `dropout` | 0.05 | Matches CNN default |
-| `pos_encoding` | sinusoidal | No extra parameters; works well on short sequences |
-
-To run a hyperparameter sweep: `wandb sweep configs/sweep.yaml`.
-
-## Repo structure ALSO NEED TO UPDATE THIS
+## Repo structure
 ```bash
-nucb_transformer/
+AwasthiJohnson_10.C51/
 │
 ├── README.md
 ├── LICENSE
-├── pyproject.toml           # or setup.py / setup.cfg
+├── pyproject.toml
 ├── requirements.txt
 ├── .gitignore
 │
-├── configs/
-│   ├── default.yaml         # model hyperparams, training settings
-│   └── sweep.yaml           # hyperparameter sweep config (e.g. for W&B)
+├── configs/ #Reflect the defaults or sweep results
+│   ├── default_trans.yaml
+│   ├── default_cnn.yaml
+│   ├── best_trans.yaml
+│   ├── best_cnn.yaml
 │
 ├── data/
-│   ├── README.md            # how to download landscape.csv from GCS
-│   └── .gitkeep             # keep dir tracked; actual data not committed
+│   ├── README.md
+│   └── .gitkeep
 │
-├── nucb_transformer/        # installable package
+├── checkpoints/ # Contain the best checkpoints from sweeping and training
+│   ├── training_trans/
+│   ├── training_cnn/
+│   ├── sweep_trans/
+│   └── sweep_cnn/
+│
+├── nucb_transformer/
 │   ├── __init__.py
-│   │
 │   ├── data/
 │   │   ├── __init__.py
-│   │   ├── dataset.py       # PyTorch Dataset: loads landscape.csv, one-hot encodes
-│   │   ├── encoding.py      # one-hot encoder (AA vocab, padding logic)
-│   │   └── splits.py        # train/val/test split logic (round-aware, as in paper)
-│   │
+│   │   ├── dataset.py
+│   │   ├── encoding.py
+│   │   └── splits.py
 │   ├── models/
 │   │   ├── __init__.py
-│   │   ├── transformer.py   # TransformerEncoder + regression/classification head
-│   │   ├── positional.py    # sinusoidal or learned positional embeddings
-│   │   └── heads.py         # regression head (MBO-DNN style) and/or class head
-│   │
+│   │   ├── transformer.py
+│   │   ├── positional.py
+│   │   └── heads.py
 │   ├── training/
 │   │   ├── __init__.py
-│   │   ├── trainer.py       # training loop, validation, early stopping
-│   │   ├── losses.py        # MSE for regression, cross-entropy for class labels
-│   │   └── metrics.py       # Spearman ρ, hit rate, enrichment factor
-│   │
+│   │   ├── trainer.py
+│   │   ├── losses.py
+│   │   └── metrics.py
 │   └── utils/
 │       ├── __init__.py
-│       ├── io.py            # checkpoint save/load helpers
-│       └── logging.py       # W&B / TensorBoard setup
+│       ├── io.py
+│       └── logging.py
 │
-├── scripts/
-│   ├── train.py             # CLI entrypoint: reads config, launches training
-│   ├── evaluate.py          # loads checkpoint, runs test-set eval
-│   └── predict.py           # scores arbitrary FASTA / CSV of sequences
+├── nucb_cnn/
+│   ├── __init__.py
+│   ├── data/
+│   │   ├── __init__.py
+│   │   ├── dataset.py
+│   │   ├── encoding.py
+│   │   └── splits.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── cnn.py
+│   │   └── heads.py
+│   ├── training/
+│   │   ├── __init__.py
+│   │   ├── trainer.py
+│   │   ├── losses.py
+│   │   └── metrics.py
+│   └── utils/
+│       ├── __init__.py
+│       ├── io.py
+│       └── logging.py
 │
-├── notebooks/
+├── esm_rep/
+│   ├── config.yaml
+│   ├── data_utils.py
+│   ├── embed.py
+│   ├── train.py
+│   ├── train_maxpool.py
+│   ├── confusion_matrix_gen_split.py
+│   ├── confusion_matrix_nmut_split.py
+│   ├── confusion_matrix_nmut_split_maxpool.py
+│   ├── cosine_per_residue_v2.py
+│   ├── hamr_distance.py
+│   ├── tsne_maxpool.py
+│   ├── tsne_wt_vs_a73r_v2.py
+│   └── output/
+│
+├── scripts/ #Use to train and use the CNN and transformer
+│   ├── train_trans.py
+│   ├── train_cnn.py
+│   ├── evaluate_trans.py
+│   ├── evaluate_cnn.py
+│   ├── predict_trans.py
+│   ├── predict_cnn.py
+│
+├── notebooks/ #Use to replicate figures and analysis
 │   ├── 01_data_exploration.ipynb
-│   ├── 02_model_comparison.ipynb   # compare transformer vs CNN baseline
-│   └── 03_results_figures.ipynb    # reproduce paper-style figures
+│   ├── 02_model_comparison.ipynb
+│   └── 03_predict_sandbox.ipynb
 │
 └── tests/
     ├── test_encoding.py
     ├── test_dataset.py
-    ├── test_model.py        # forward pass shape checks, no NaN outputs
+    ├── test_model.py
     └── test_metrics.py
+
     ```
