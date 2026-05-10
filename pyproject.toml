@@ -1,12 +1,12 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "nucb_transformer"
 version = "0.1.0"
 description = "Transformer-based sequence-to-activity classifier for NucB nuclease variants"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 dependencies = [
     "torch>=2.2.0",
     "numpy>=1.26.0",
@@ -16,7 +16,7 @@ dependencies = [
     "biopython>=1.83",
     "scipy>=1.12.0",
     "statsmodels>=0.14.0",
-    nuclease_design @ git+https://github.com/google-deepmind/nuclease_design.git,
+    "nuclease_design @ git+https://github.com/google-deepmind/nuclease_design.git",
 
 ]
 
@@ -31,4 +31,4 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["nucb_transformer*"]
+include = ["nucb_transformer*", "nucb_cnn*"]

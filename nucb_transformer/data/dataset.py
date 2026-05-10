@@ -5,12 +5,8 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
-import numpy as np
 from nuclease_design import utils as _nd_utils
-from nucb_transformer.data.encoding import (
-    tokenize, pad_or_truncate, mutation_string_to_sequence,
-    VARIABLE_REGION_LENGTH, ACTIVITY_CLASSES,
-)
+from nucb_transformer.data.encoding import tokenize
 
 # ── preprocessing ─────────────────────────────────────────────────────────────
 

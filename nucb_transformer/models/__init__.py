@@ -1,3 +1,3 @@
 from nucb_transformer.models.transformer import NucleaseTransformer, TransformerEncoderBlock, MultiHeadSelfAttention
 from nucb_transformer.models.positional import SinusoidalPositionalEncoding, LearnedPositionalEncoding
-from nucb_transformer.models.heads import ClassificationHead, RegressionHead
+from nucb_transformer.models.heads import ClassificationHead

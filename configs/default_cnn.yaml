@@ -1,0 +1,29 @@
+# Default hyperparameters for NucleaseConvNet.
+# Architecture mirrors the DeepMind G4 CNN: 3 conv layers (32 filters, k=5),
+# flatten, Dense(64) + 5% dropout. Training settings match the transformer
+# config so experiments are directly comparable.
+
+model:
+  num_filters: 32          # conv channels per layer (DeepMind G4 default)
+  kernel_size: 5           # receptive field per conv layer
+  num_conv_layers: 3       # conv blocks — mirrors transformer's 3 encoder blocks
+  hidden_dim: 64           # dense units after flatten (DeepMind G4 default)
+  dropout: 0.05            # 5% dropout, same as transformer and DeepMind defaults
+  seq_len: 142             # full NucB sequence length (no variable-region trimming)
+
+data:
+  max_train_mutations: 2   # variants with <= this many mutations → train/val; rest → test
+  val_frac: 0.1
+  batch_size: 256
+  num_workers: 4
+
+training:
+  epochs: 50
+  learning_rate: 1.0e-3
+  weight_decay: 1.0e-4
+  warmup_steps: 500        # linear LR warmup before cosine decay
+  grad_clip: 1.0
+  seed: 42
+  checkpoint_dir: checkpoints/training_cnn/
+  log_wandb: false         # set true to enable Weights & Biases logging
+  wandb_project: nuclease_cnn

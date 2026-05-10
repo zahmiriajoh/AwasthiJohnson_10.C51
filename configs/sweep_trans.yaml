@@ -1,0 +1,24 @@
+method: bayes
+metric:
+  name: val/hit_rate
+  goal: maximize
+
+parameters:
+  learning_rate:
+    distribution: log_uniform_values
+    min: 1.0e-4
+    max: 1.0e-3
+  weight_decay:
+    distribution: log_uniform_values
+    min: 1.0e-5
+    max: 1.0e-1
+  d_model:
+    values: [64, 128, 256]
+  num_heads:
+    values: [2, 4, 8]      # all divide evenly into 64, 128, and 256
+  num_layers:
+    values: [2, 3, 4, 6]
+  dropout:
+    distribution: uniform
+    min: 0.0
+    max: 0.2
