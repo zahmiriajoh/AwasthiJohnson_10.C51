@@ -38,7 +38,7 @@ split:
   #   - 'all_others'      = every generation token not listed in train_generations
   #   - 'random_holdout'  = stratified random holdout from the train pool
   
-  test_generations: g4
+  test_generations: [g4]
 
   # ---- Settings used when mode == 'mutation_count' ----------------------
   # Train pool = rows with num_mutations < threshold.
