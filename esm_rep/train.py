@@ -28,6 +28,8 @@ from sklearn.preprocessing import StandardScaler
 from data_utils import load_and_split, load_config
 from embed import embed_sequences
 
+ORDINAL_ORDER = ["non-functional", "activity > 0", "activity > WT", "activity > A73R"]
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -125,7 +127,9 @@ def main():
     print("\nClassification report:")
     print(classification_report(y_te, preds, zero_division=0))
 
-    label_order = sorted(set(y_tr) | set(y_te))
+    present = set(y_tr) | set(y_te)
+    label_order = ([c for c in ORDINAL_ORDER if c in present]
+                   + sorted(present - set(ORDINAL_ORDER)))
     cm = pd.DataFrame(
         confusion_matrix(y_te, preds, labels=label_order),
         index=[f"true:{c}" for c in label_order],
@@ -133,6 +137,22 @@ def main():
     )
     print("Confusion matrix:")
     print(cm)
+
+    # ---- Save predictions CSV (landscape with predictions appended) ----
+    preds_tr = clf.predict(X_tr_s)
+    proba_tr = clf.predict_proba(X_tr_s)
+    proba_te = clf.predict_proba(X_te_s)
+
+    df_out = pd.concat([df_train, df_test], ignore_index=True)
+    df_out["split"] = ["train"] * len(df_train) + ["test"] * len(df_test)
+    df_out["predicted_class"] = np.concatenate([preds_tr, preds])
+    proba_all = np.vstack([proba_tr, proba_te])
+    for i, c in enumerate(clf.classes_):
+        df_out[f"prob_{c}"] = proba_all[:, i]
+    pred_path = Path("output/predictions.csv")
+    pred_path.parent.mkdir(parents=True, exist_ok=True)
+    df_out.to_csv(pred_path, index=False)
+    print(f"\nPredictions saved to {pred_path}")
 
 
 if __name__ == "__main__":

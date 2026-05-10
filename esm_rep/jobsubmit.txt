@@ -1,1 +1,1 @@
-python train.py --config config.yaml
+python confusion_matrix_gen_split.py

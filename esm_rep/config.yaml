@@ -22,7 +22,7 @@ split:
   #                    appeared in (e.g. g1, g2, g3, g4)
   #   mutation_count — partition by the integer `num_mutations` column.
   #                    
-  mode: mutation_count
+  mode: generation
 
   # ---- Settings used when mode == 'generation' --------------------------
   # Values are case-insensitive and matched by set-membership against the
@@ -31,14 +31,14 @@ split:
   # Examples:
   #   train_generations: [g1]
   #   train_generations: [g1, g2]
-  train_generations: [g1]
+  train_generations: [g1, g2, g3]
 
   # Which generation(s) to TEST on. Three options:
   #   - explicit list, e.g. [g2, g3, g4]
   #   - 'all_others'      = every generation token not listed in train_generations
   #   - 'random_holdout'  = stratified random holdout from the train pool
   
-  test_generations: all_others
+  test_generations: g4
 
   # ---- Settings used when mode == 'mutation_count' ----------------------
   # Train pool = rows with num_mutations < threshold.
@@ -54,7 +54,7 @@ split:
 
 embedding:
   # ESM-2 variant
-  model_name: facebook/esm2_t6_8M_UR50D #esm2_t12_35M_UR50D #esm2_t6_8M_UR50D
+  model_name: facebook/esm2_t6_8M_UR50D #esm2_t12_35M_UR50D  or esm2_t6_8M_UR50D
   cache_dir: ./esm_cache
   batch_size: 8
   chunk_size: 1024
