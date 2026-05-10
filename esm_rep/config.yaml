@@ -2,15 +2,14 @@
 # Configuration for ESM-2 + logistic regression on the NucB landscape.
 #
 # Typical workflow:
-#   python embed.py --config config.yaml   # (optional) pre-compute embeddings
 #   python train.py --config config.yaml   # train + evaluate the classifier
+# It is easier to simply run:
+#   python confusion_matrix_nmut_split.py since it will automatically train the model using the settings in config.yaml.
 #
-# train.py will compute embeddings on demand if they aren't cached, so running
-# embed.py first is only useful when you want to do the slow embedding pass on
-# one machine and the fast classifier sweep on another.
+
 
 data:
-  # Path to landscape.csv from https://github.com/google-deepmind/nuclease_design
+  # Path to landscape.csv
   path: data/landscape.csv
   sequence_col: sequence
   target_col: activity_level
@@ -22,22 +21,11 @@ split:
   #                    appeared in (e.g. g1, g2, g3, g4)
   #   mutation_count — partition by the integer `num_mutations` column.
   #                    
-  mode: generation
+  mode: mutation_count
 
   # ---- Settings used when mode == 'generation' --------------------------
-  # Values are case-insensitive and matched by set-membership against the
-  # (potentially multi-valued) `generations` column to avoid overlaps.
-  # Variants that appear in BOTH pools are kept in train only.
-  # Examples:
-  #   train_generations: [g1]
-  #   train_generations: [g1, g2]
-  train_generations: [g1, g2, g3]
-
-  # Which generation(s) to TEST on. Three options:
-  #   - explicit list, e.g. [g2, g3, g4]
-  #   - 'all_others'      = every generation token not listed in train_generations
-  #   - 'random_holdout'  = stratified random holdout from the train pool
-  
+  # Variants that appear in both pools are kept in train only.
+  train_generations: [g1, g2, g3]  
   test_generations: [g4]
 
   # ---- Settings used when mode == 'mutation_count' ----------------------
@@ -45,20 +33,15 @@ split:
   # Default 3 means: train on WT + single mutants + double mutants, test on multi-mutants.
   mutation_count_col: num_mutations
   mutation_count_threshold: 3
-  # 'complement'      = test on rows with num_mutations >= threshold
-  # 'random_holdout'  = stratified random holdout from the train pool
   test_set: complement
-
-  # Used only when test_generations or test_set == 'random_holdout':
-  test_size: 0.2
 
 embedding:
   # ESM-2 variant
-  model_name: facebook/esm2_t6_8M_UR50D #esm2_t12_35M_UR50D  or esm2_t6_8M_UR50D
+  model_name: facebook/esm2_t6_8M_UR50D #esm2_t12_35M_UR50D or esm2_t6_8M_UR50D
   cache_dir: ./esm_cache
   batch_size: 8
   chunk_size: 1024
-  max_length: 1024
+  max_length: 1024 # our sequences are only 142 
 
 classifier:
   # Inverse regularization strengths to search over via CV.

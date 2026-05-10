@@ -6,7 +6,6 @@ Outputs to ./output/nmut_split/:
   - confusion_matrix_dist_<bin>.png       (stratified by min linear distance,
                                            ≥3-mutation variants only)
   - hits_at_k.png                         (matches paper Table S5)
-  - class_distribution.png                (train vs test by mutation count)
 """
 
 import ast
@@ -78,7 +77,7 @@ def plot_cm(y_true, y_pred, labels, title, out_path):
 # -----------------------------------------------------------------------------
 
 cfg = load_config("config.yaml")
-out_dir = Path("output") / "nmut_split"
+out_dir = Path("output") / "finaltest"
 out_dir.mkdir(parents=True, exist_ok=True)
 print(f"Writing outputs to {out_dir}/")
 
@@ -188,50 +187,5 @@ if hits:
     fig.savefig(out_dir / "hits_at_k.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"  saved hits_at_k.png")
-
-# -----------------------------------------------------------------------------
-# 5. Class distribution by mutation count, train vs test
-# -----------------------------------------------------------------------------
-
-print("\n[5/5] Class distribution:")
-present = set(df_train[target_col]) | set(df_test[target_col])
-dist_classes = [c for c in ORDINAL_ORDER if c in present]
-max_mut = int(max(df_train["num_mutations"].max(),
-                  df_test["num_mutations"].max()))
-edges = sorted({e for e in [0, 1, 2, 3, 5, 10, 15, max(20, max_mut + 1)]
-                if e <= max_mut + 1})
-bin_labels = [str(edges[i]) if edges[i+1] - edges[i] == 1
-              else f"{edges[i]}-{edges[i+1]-1}"
-              for i in range(len(edges) - 1)]
-bin_labels[-1] = f"{edges[-2]}+"
-
-def get_counts(df):
-    nm = df["num_mutations"].astype(int).values
-    cls = df[target_col].astype(str).values
-    out = np.zeros((len(bin_labels), len(dist_classes)), dtype=int)
-    for i, (lo, hi) in enumerate(zip(edges[:-1], edges[1:])):
-        in_bin = (nm >= lo) & (nm < hi)
-        for j, c in enumerate(dist_classes):
-            out[i, j] = int((in_bin & (cls == c)).sum())
-    return out
-
-cnt_tr, cnt_te = get_counts(df_train), get_counts(df_test)
-fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-cmap = plt.cm.viridis(np.linspace(0.15, 0.85, len(dist_classes)))
-for ax, cnt, name in [(axes[0], cnt_tr, "Train"), (axes[1], cnt_te, "Test")]:
-    bottom = np.zeros(len(bin_labels))
-    for j, c in enumerate(dist_classes):
-        ax.bar(bin_labels, cnt[:, j], bottom=bottom, color=cmap[j], label=c)
-        bottom += cnt[:, j]
-    ax.set_xlabel("Mutations from WT")
-    ax.set_ylabel("Variant count")
-    ax.set_title(f"{name} pool (n = {int(cnt.sum())})")
-axes[1].legend(loc="center left", bbox_to_anchor=(1.02, 0.5),
-               title="Activity class", fontsize=8)
-fig.suptitle("Class distribution by mutation count")
-fig.tight_layout()
-fig.savefig(out_dir / "class_distribution.png", dpi=150, bbox_inches="tight")
-plt.close(fig)
-print(f"  saved class_distribution.png")
 
 print(f"\nAll outputs in {out_dir}/")

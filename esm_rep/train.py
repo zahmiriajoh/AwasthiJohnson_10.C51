@@ -44,6 +44,7 @@ def main():
     df_train, df_test = load_and_split(cfg)
     print(f"Train: {len(df_train)} | Test: {len(df_test)}")
 
+ # concatenate train/test for embedding, then slice back after
     sequences = (df_train[seq_col].astype(str).tolist()
                  + df_test[seq_col].astype(str).tolist())
     labels = np.concatenate([
@@ -74,7 +75,7 @@ def main():
     ).fit(X_tr_s, y_tr)
     print(f"Best C per class: {clf.C_}")
 
-    # ---- Training loss curve (diagnostic; doesn't change clf above) ----
+    # ---- Training loss curve (refits the logistic regression with best C) ----
     print("\nComputing training loss curve...")
     loss_dir = Path("output/training_loss")
     loss_dir.mkdir(parents=True, exist_ok=True)

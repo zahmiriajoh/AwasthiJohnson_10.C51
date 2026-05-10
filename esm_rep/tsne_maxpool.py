@@ -1,15 +1,9 @@
-"""t-SNE of delta-from-WT ESM features for the full landscape,
-with WT, A73R, A33C highlighted. Companion to tsne_wt_vs_a73r.py
-which does the same on raw mean-pooled features.
-
-Reuses compute_delta_features from train_delta.py, so the cache hits
-whatever train_delta.py already computed (or this script is the first
-caller and seeds the cache).
+"""t-SNE of delta-from-WT maxpooled ESM features for the full landscape,
+with WT, A73R, A33C highlighted.
 """
 
 import ast
 from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -56,21 +50,21 @@ wt_seq = sequences[wt_idx]
 X = compute_delta_features(sequences, wt_seq, cfg)
 print(f"Delta-feature shape: {X.shape}")
 
-# PCA -> 50 -> t-SNE.
+# PCA, 50 dims, t-SNE.
 print("PCA -> 50 dims, then t-SNE...")
 X_pca = PCA(n_components=50, random_state=42).fit_transform(X)
 X_2d = TSNE(n_components=2, perplexity=30, init="pca", learning_rate="auto",
             random_state=42, n_jobs=-1, verbose=1).fit_transform(X_pca)
 np.save(out_dir / "tsne_delta_coords.npy", X_2d)
 
-# Pairwise cosine distances among the three references.
+# pairwise cosine distances among the three references.
 print("\nCosine distances in delta-feature space:")
 for i, (n_i, idx_i, _) in enumerate(refs):
     for n_j, idx_j, _ in refs[i + 1:]:
         d = float(cosine_distances(X[idx_i:idx_i + 1], X[idx_j:idx_j + 1])[0, 0])
         print(f"  {n_i:<4} <-> {n_j:<4}: {d:.4f}")
 
-# Plot.
+# plot
 fig, ax = plt.subplots(figsize=(11, 9))
 for cls in CLASS_ORDER:
     m = labels == cls

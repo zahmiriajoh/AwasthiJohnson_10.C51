@@ -2,7 +2,6 @@
 
 import ast
 from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -48,21 +47,21 @@ labels = df["activity_level"].astype(str).to_numpy()
 X = embed_sequences(sequences, cfg)
 print(f"Embedding shape: {X.shape}")
 
-# PCA -> 50 -> t-SNE.
+# PCA, select top 50 dims, then t-SNE.
 print("PCA -> 50 dims, then t-SNE...")
 X_pca = PCA(n_components=50, random_state=42).fit_transform(X)
 X_2d = TSNE(n_components=2, perplexity=30, init="pca", learning_rate="auto",
             random_state=42, n_jobs=-1, verbose=1).fit_transform(X_pca)
 np.save(out_dir / "tsne_coords.npy", X_2d)
 
-# Pairwise cosine distances among the three references in original embedding space.
+# print pairwise cosine distances among the three references in original embedding space.
 print("\nCosine distances in original embedding space:")
 for i, (n_i, idx_i, _) in enumerate(refs):
     for n_j, idx_j, _ in refs[i + 1:]:
         d = float(cosine_distances(X[idx_i:idx_i + 1], X[idx_j:idx_j + 1])[0, 0])
         print(f"  {n_i:<4} <-> {n_j:<4}: {d:.4f}")
 
-# Plot.
+# Plot
 fig, ax = plt.subplots(figsize=(11, 9))
 for cls in CLASS_ORDER:
     m = labels == cls

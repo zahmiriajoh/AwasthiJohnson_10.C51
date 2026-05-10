@@ -1,8 +1,7 @@
 """Generate ESM-2 mean-pooled embeddings for sequences specified by a config.
 
 Cached under cfg.embedding.cache_dir, keyed by SHA256(model_name + sequences).
-Embedding is chunked and resumable: if interrupted, re-running picks up at
-the last saved chunk.
+Embedding is chunked and resumable.
 
 Usage:
     python embed.py --config config.yaml
@@ -48,7 +47,7 @@ def embed_sequences(sequences, cfg) -> np.ndarray:
     """Compute mean-pooled embeddings for an ordered list of sequences.
 
     Returns an (N, D) float32 array. Resumable: each chunk_NNNNN.npy is
-    saved as it's computed, so a crash can pick up where it left off.
+    saved as it's computed.
     """
     e = cfg["embedding"]
     device = "cuda" if torch.cuda.is_available() else "cpu"

@@ -1,14 +1,6 @@
 """Load the NucB landscape CSV and partition it into train / test pools.
 
-Two split modes selected via cfg["split"]["mode"]:
-
-  * "generation" — variants routed by which experimental round(s) they
-    appeared in. cfg["split"]["train_generations"] is a list of tokens;
-    cfg["split"]["test_generations"] is either a list of tokens or
-    "all_others". Variants in both pools go to TRAIN only.
-
-  * "mutation_count" — variants split on the integer num_mutations column.
-    Train = num_mutations < threshold, test = >= threshold.
+Two split modes selected via cfg["split"]["mode"].
 """
 
 from __future__ import annotations

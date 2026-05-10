@@ -1,23 +1,4 @@
-"""Train classifier on delta-from-WT pooled ESM features.
-
-Per-residue ESM embeddings minus WT per-residue embeddings, then
-max-abs-pooled across positions: for each ESM dimension, take the
-largest absolute perturbation across the L residue positions.
-
-Why max-abs and not mean: mean-pooling commutes with subtraction, so
-mean_pool(E_v − E_wt) = mean_pool(E_v) − mean_pool(E_wt), where the
-second term is a constant across variants. StandardScaler then absorbs
-that constant, making the delta + mean-pool features mathematically
-identical to raw mean-pool features. Max-abs is a non-linear aggregation
-that breaks this equivalence — its value at dim k is the largest
-position-wise |delta| in dim k, which depends nonlinearly on which
-position(s) were perturbed and by how much.
-
-Standalone — does not modify embed.py or train.py.
-
-Output goes to output/training_loss_delta/ (loss curve + values), parallel
-to train.py's output/training_loss/ so you can compare directly.
-
+"""Train classifier on delta-from-WT maxpooled ESM features.
 Usage:
     python train_delta.py --config config.yaml
 """
@@ -54,10 +35,6 @@ ORDINAL_ORDER = ["non-functional", "activity > 0", "activity > WT", "activity > 
 def compute_delta_features(sequences, wt_seq, cfg) -> np.ndarray:
     """Max-abs pool of (per-residue ESM - WT per-residue ESM) over positions.
     Returns (N, D) float32. Resumable chunk-saving like embed.py.
-
-    Assumes all sequences in the batch are the same length (true for the
-    NucB landscape — all variants are 142 residues). Variable lengths
-    would need explicit handling of attention_mask before pooling.
     """
     e = cfg["embedding"]
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -103,8 +80,7 @@ def compute_delta_features(sequences, wt_seq, cfg) -> np.ndarray:
             enc = tokenizer(batch, return_tensors="pt", padding=True,
                             truncation=True, max_length=e["max_length"]).to(device)
             h = model(**enc).last_hidden_state  # (B, L+2, D)
-            # Drop <cls> at idx 0 and <eos> at idx -1. Valid because all
-            # NucB variants have the same length, so no padding is added.
+            # Drop <cls> at idx 0 and <eos> at idx -1.
             per_res = h[:, 1:-1, :]                       # (B, L, D)
             delta = per_res - wt_per_res.unsqueeze(0)     # (B, L, D)
             features = delta.abs().max(dim=1).values      # max-abs pool: (B, D)
